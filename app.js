@@ -261,25 +261,7 @@ function extractIntentTags(text) {
   return tags;
 }
 
-$('convert-demand').addEventListener('click', async () => {
-  const selected = [...document.querySelectorAll('[data-converter-list]:checked')].map((o) => Number(o.dataset.converterList));
-  if (!selected.length) return alert('En az 1 fiyat listesi seçin');
-  let text = '';
-  if ($('manual-entry-check').checked || $('manual-demand').value.trim()) text += $('manual-demand').value + '\n';
-  const excelFile = $('excel-input').files[0];
-  if (excelFile) {
-    const parsed = await parseExcelFile(excelFile);
-    text += parsed.map((r) => `${r.name} ${r.qty || ''}`).join('\n');
-  }
-  const nonParsableFileExists = $('pdf-input').files[0] || $('word-input').files[0] || $('image-input').files[0];
-  if (nonParsableFileExists && !excelFile && !$('manual-demand').value.trim()) {
-    alert('PDF/Word/Görsel dosyaları bu demo sürümde metne dönüştürülmüyor. Lütfen metin girin veya Excel yükleyin.');
-    return;
-  }
-  if (!text.trim()) return alert('Dönüştürücü için metin veya dosya ekleyin');
-
-  const demands = parseDemandText(text);
-  const pools = state.priceLists.filter((l) => selected.includes(l.id));
+function convertWithRules(demands, pools) {
   const out = [];
   demands.forEach((d) => {
     let best = null;
@@ -330,6 +312,105 @@ $('convert-demand').addEventListener('click', async () => {
       out.push({ code: '-', name: d.raw || d.name, qty: d.qty, price: 0, listName: 'Eşleşmedi', alternatives: [] });
     }
   });
+  return out;
+}
+
+async function convertWithAI(demands, pools, apiKey) {
+  const catalog = pools.flatMap((list) => list.items.map((item) => ({
+    code: item.code,
+    name: item.name,
+    price: n(item.price),
+    listName: list.name
+  })));
+  const payload = {
+    model: 'gpt-4.1-mini',
+    input: [
+      {
+        role: 'system',
+        content: `Sen bir teklif eşleştirme asistanısın. Kullanıcı taleplerini sadece verilen ürün kataloğu ile eşleştir. \nKurallar: mümkünse doğru ürün seç; eşleşme düşükse code '-' ve listName 'Eşleşmedi' dön. Redüksiyon için 25x20 ve 20x25 aynı kabul edilebilir. 87 derece dirsek 90 dereceyle eşleşebilir. Çıktı sadece JSON olsun.`
+      },
+      {
+        role: 'user',
+        content: JSON.stringify({ demands, catalog })
+      }
+    ],
+    text: {
+      format: {
+        type: 'json_schema',
+        name: 'match_result',
+        schema: {
+          type: 'object',
+          properties: {
+            rows: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  code: { type: 'string' },
+                  name: { type: 'string' },
+                  qty: { type: 'number' },
+                  price: { type: 'number' },
+                  listName: { type: 'string' }
+                },
+                required: ['code', 'name', 'qty', 'price', 'listName'],
+                additionalProperties: false
+              }
+            }
+          },
+          required: ['rows'],
+          additionalProperties: false
+        }
+      }
+    }
+  };
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) throw new Error(`AI API hatası: ${response.status}`);
+  const data = await response.json();
+  const raw = data.output_text || '{}';
+  const parsed = JSON.parse(raw);
+  return (parsed.rows || []).map((r) => ({ ...r, alternatives: [] }));
+}
+
+$('convert-demand').addEventListener('click', async () => {
+  const selected = [...document.querySelectorAll('[data-converter-list]:checked')].map((o) => Number(o.dataset.converterList));
+  if (!selected.length) return alert('En az 1 fiyat listesi seçin');
+  let text = '';
+  if ($('manual-entry-check').checked || $('manual-demand').value.trim()) text += $('manual-demand').value + '\n';
+  const excelFile = $('excel-input').files[0];
+  if (excelFile) {
+    const parsed = await parseExcelFile(excelFile);
+    text += parsed.map((r) => `${r.name} ${r.qty || ''}`).join('\n');
+  }
+  const nonParsableFileExists = $('pdf-input').files[0] || $('word-input').files[0] || $('image-input').files[0];
+  if (nonParsableFileExists && !excelFile && !$('manual-demand').value.trim()) {
+    alert('PDF/Word/Görsel dosyaları bu demo sürümde metne dönüştürülmüyor. Lütfen metin girin veya Excel yükleyin.');
+    return;
+  }
+  if (!text.trim()) return alert('Dönüştürücü için metin veya dosya ekleyin');
+
+  const demands = parseDemandText(text);
+  const pools = state.priceLists.filter((l) => selected.includes(l.id));
+  const aiEnabled = $('ai-enabled').checked;
+  const apiKey = $('ai-api-key').value.trim();
+  let out = [];
+  if (aiEnabled && apiKey) {
+    try {
+      out = await convertWithAI(demands, pools, apiKey);
+    } catch (err) {
+      console.error('AI eşleştirme başarısız, kurallı motora dönülüyor:', err);
+      alert('AI eşleştirme başarısız oldu, kurallı motor ile devam ediliyor.');
+      out = convertWithRules(demands, pools);
+    }
+  } else {
+    out = convertWithRules(demands, pools);
+  }
   state.convertedRows = out;
   renderConverted();
   if (!out.length) {
