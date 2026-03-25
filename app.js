@@ -16,6 +16,17 @@ const qs = (selector) => document.querySelector(selector);
 const normalize = (s) => (s || '').toString().toLowerCase().replace(/[^a-z0-9çğıöşü\s]/gi, ' ').replace(/\s+/g, ' ').trim();
 const n = (v) => Number(v) || 0;
 const SUPPORTED_PRICE_EXTENSIONS = ['xlsx', 'xls', 'csv'];
+const SEMANTIC_SYNONYMS = {
+  pp: 'pprc',
+  ppr: 'pprc',
+  pvcu: 'pvc',
+  reduksiyon: 'reduksiyon',
+  rediksiyon: 'reduksiyon',
+  rekor: 'reduksiyon',
+  dirsek87: 'dirsek90',
+  dirsek90: 'dirsek90',
+  boru: 'boru'
+};
 
 menuButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -182,9 +193,12 @@ function similarity(a, b) {
   const aa = normalize(a); const bb = normalize(b);
   if (!aa || !bb) return 0;
   if (aa.includes(bb) || bb.includes(aa)) return 0.95;
-  const aw = aa.split(' '); const bw = bb.split(' ');
+  const canon = (w) => SEMANTIC_SYNONYMS[w] || w;
+  const aw = [...new Set(aa.split(' ').map(canon).filter(Boolean))];
+  const bw = [...new Set(bb.split(' ').map(canon).filter(Boolean))];
   const common = aw.filter((w) => bw.includes(w)).length;
-  return common / Math.max(aw.length, bw.length);
+  const jaccard = common / Math.max((new Set([...aw, ...bw])).size, 1);
+  return Math.max(common / Math.max(aw.length, bw.length), jaccard);
 }
 
 function extractDimensions(text) {
@@ -261,7 +275,8 @@ function extractIntentTags(text) {
   return tags;
 }
 
-function convertWithRules(demands, pools) {
+function convertWithRules(demands, pools, options = {}) {
+  const minScore = options.minScore ?? 0.05;
   const out = [];
   demands.forEach((d) => {
     let best = null;
@@ -287,16 +302,16 @@ function convertWithRules(demands, pools) {
         }
       }
       if (!demandDimension && demandNominalSize && itemNominalSize && Math.abs(demandNominalSize - itemNominalSize) > 0.5) return;
-      if (d.intents.has('boru') && !itemIntents.has('boru')) return;
-      if (d.intents.has('reduksiyon') && !itemIntents.has('reduksiyon')) return;
-      if (d.intents.has('dirsek') && !itemIntents.has('dirsek')) return;
+      if (d.intents.has('boru') && !itemIntents.has('boru') && !options.softIntent) return;
+      if (d.intents.has('reduksiyon') && !itemIntents.has('reduksiyon') && !options.softIntent) return;
+      if (d.intents.has('dirsek') && !itemIntents.has('dirsek') && !options.softIntent) return;
       if (d.intents.has('dirsek_90') && !(itemText.includes('87') || itemText.includes('90'))) return;
       if (!d.intents.has('traslama') && itemIntents.has('traslama')) return;
       const s = Math.max(similarity(d.name, item.name), similarity(d.name, item.code)) + dimensionBoost;
       candidates.push({ item, score: s, listName: list.name });
       if (!best || s > best.score) best = { item, score: s, listName: list.name };
     }));
-    if (best && best.score >= 0.05) {
+    if (best && best.score >= minScore) {
       const alternatives = candidates
         .filter((c) => c.item.code !== best.item.code || c.item.name !== best.item.name)
         .sort((a, b) => b.score - a.score)
@@ -313,6 +328,14 @@ function convertWithRules(demands, pools) {
     }
   });
   return out;
+}
+
+function aiFilterText(text) {
+  return text
+    .replace(/\bpp\b/gi, 'pprc')
+    .replace(/\brediksiyon\b/gi, 'reduksiyon')
+    .replace(/\b87\s*derece\b/gi, '90 derece')
+    .replace(/\brekor\b/gi, 'reduksiyon');
 }
 
 async function convertWithAI(demands, pools, apiKey) {
@@ -395,10 +418,11 @@ $('convert-demand').addEventListener('click', async () => {
   }
   if (!text.trim()) return alert('Dönüştürücü için metin veya dosya ekleyin');
 
-  const demands = parseDemandText(text);
-  const pools = state.priceLists.filter((l) => selected.includes(l.id));
   const aiEnabled = $('ai-enabled').checked;
   const apiKey = $('ai-api-key').value.trim();
+  const filteredText = aiEnabled ? aiFilterText(text) : text;
+  const demands = parseDemandText(filteredText);
+  const pools = state.priceLists.filter((l) => selected.includes(l.id));
   let out = [];
   if (aiEnabled && apiKey) {
     try {
@@ -406,10 +430,12 @@ $('convert-demand').addEventListener('click', async () => {
     } catch (err) {
       console.error('AI eşleştirme başarısız, kurallı motora dönülüyor:', err);
       alert('AI eşleştirme başarısız oldu, kurallı motor ile devam ediliyor.');
-      out = convertWithRules(demands, pools);
+      out = convertWithRules(demands, pools, { minScore: 0.03, softIntent: true });
     }
   } else {
-    out = convertWithRules(demands, pools);
+    out = aiEnabled
+      ? convertWithRules(demands, pools, { minScore: 0.03, softIntent: true })
+      : convertWithRules(demands, pools);
   }
   state.convertedRows = out;
   renderConverted();
