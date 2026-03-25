@@ -217,6 +217,15 @@ function isCloseDimension(demandDim, itemDim) {
   return firstRatioDiff <= 0.15 && secondRatioDiff <= 0.05;
 }
 
+function isReductionDimensionCompatible(demandDim, itemDim) {
+  if (!demandDim || !itemDim) return false;
+  if (demandDim === itemDim) return true;
+  const d = parseDimensionParts(demandDim);
+  const i = parseDimensionParts(itemDim);
+  if (!d || !i) return false;
+  return (Math.abs(d.a - i.b) <= 0.5 && Math.abs(d.b - i.a) <= 0.5);
+}
+
 function extractNominalSize(text) {
   const src = (text || '').toString().toLowerCase();
   const mmMatch = src.match(/(\d+(?:[\.,]\d+)?)\s*mm\b/);
@@ -285,7 +294,9 @@ $('convert-demand').addEventListener('click', async () => {
       if (demandDimension && !itemDimension) return;
       let dimensionBoost = 0;
       if (demandDimension && itemDimension) {
-        if (demandDimension === itemDimension) {
+        if (d.intents.has('reduksiyon') && isReductionDimensionCompatible(demandDimension, itemDimension)) {
+          dimensionBoost = 0.2;
+        } else if (demandDimension === itemDimension) {
           dimensionBoost = 0.2;
         } else if (isCloseDimension(demandDimension, itemDimension)) {
           dimensionBoost = 0.05;
@@ -308,7 +319,12 @@ $('convert-demand').addEventListener('click', async () => {
         .filter((c) => c.item.code !== best.item.code || c.item.name !== best.item.name)
         .sort((a, b) => b.score - a.score)
         .slice(0, 3)
-        .map((c) => `${c.item.name} (${c.listName})`);
+        .map((c) => ({
+          code: c.item.code,
+          name: c.item.name,
+          price: n(c.item.price),
+          listName: c.listName
+        }));
       out.push({ code: best.item.code, name: best.item.name, qty: d.qty, price: n(best.item.price), listName: best.listName, alternatives });
     } else {
       out.push({ code: '-', name: d.raw || d.name, qty: d.qty, price: 0, listName: 'Eşleşmedi', alternatives: [] });
@@ -332,11 +348,30 @@ function renderConverted() {
       <td contenteditable="true" data-k="qty">${r.qty}</td>
       <td contenteditable="true" data-k="price">${n(r.price).toFixed(2)}</td>
       <td>${r.listName}</td>
-      <td>${(r.alternatives || []).join(' | ')}</td>`;
+      <td>
+        <select data-alt-select="${i}">
+          <option value=\"current\">Mevcut Eşleşme</option>
+          ${(r.alternatives || []).map((alt, altIndex) => `<option value=\"${altIndex}\">${alt.name} (${alt.listName})</option>`).join('')}
+        </select>
+      </td>`;
     tr.querySelectorAll('[contenteditable=true]').forEach((cell) => {
       cell.addEventListener('input', () => { state.convertedRows[i][cell.dataset.k] = cell.textContent.trim(); });
     });
     tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-alt-select]').forEach((sel) => {
+    sel.addEventListener('change', (e) => {
+      const rowIndex = Number(e.target.dataset.altSelect);
+      const altIndex = e.target.value;
+      if (altIndex === 'current') return;
+      const chosen = state.convertedRows[rowIndex]?.alternatives?.[Number(altIndex)];
+      if (!chosen) return;
+      state.convertedRows[rowIndex].code = chosen.code;
+      state.convertedRows[rowIndex].name = chosen.name;
+      state.convertedRows[rowIndex].price = chosen.price;
+      state.convertedRows[rowIndex].listName = chosen.listName;
+      renderConverted();
+    });
   });
 }
 
