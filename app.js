@@ -237,8 +237,19 @@ function parseDemandText(text) {
       .replace(/\b(adet|mt|metre|pcs|tane|kg|koli|paket)\b/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-    return { raw: line.trim(), name, qty, dimension: extractDimensions(line), nominalSize: extractNominalSize(line) };
+    return { raw: line.trim(), name, qty, dimension: extractDimensions(line), nominalSize: extractNominalSize(line), intents: extractIntentTags(line) };
   }).filter((x) => x.name);
+}
+
+function extractIntentTags(text) {
+  const s = normalize(text);
+  const tags = new Set();
+  if (s.includes('dirsek')) tags.add('dirsek');
+  if (s.includes('reduksiyon') || s.includes('rediksiyon') || s.includes('reduk')) tags.add('reduksiyon');
+  if (s.includes('boru')) tags.add('boru');
+  if (s.includes('traslama') || s.includes('traşlama')) tags.add('traslama');
+  if (/\b(87|90)\b/.test(s) && s.includes('dirsek')) tags.add('dirsek_90');
+  return tags;
 }
 
 $('convert-demand').addEventListener('click', async () => {
@@ -263,11 +274,14 @@ $('convert-demand').addEventListener('click', async () => {
   const out = [];
   demands.forEach((d) => {
     let best = null;
+    const candidates = [];
     pools.forEach((list) => list.items.forEach((item) => {
+      const itemText = `${item.code || ''} ${item.name || ''}`;
       const demandDimension = d.dimension;
-      const itemDimension = extractDimensions(`${item.code || ''} ${item.name || ''}`);
+      const itemDimension = extractDimensions(itemText);
       const demandNominalSize = d.nominalSize;
-      const itemNominalSize = extractNominalSize(`${item.code || ''} ${item.name || ''}`);
+      const itemNominalSize = extractNominalSize(itemText);
+      const itemIntents = extractIntentTags(itemText);
       if (demandDimension && !itemDimension) return;
       let dimensionBoost = 0;
       if (demandDimension && itemDimension) {
@@ -280,14 +294,24 @@ $('convert-demand').addEventListener('click', async () => {
         }
       }
       if (!demandDimension && demandNominalSize && itemNominalSize && Math.abs(demandNominalSize - itemNominalSize) > 0.5) return;
-      if (d.name.includes('boru') && !normalize(item.name).includes('boru')) return;
+      if (d.intents.has('boru') && !itemIntents.has('boru')) return;
+      if (d.intents.has('reduksiyon') && !itemIntents.has('reduksiyon')) return;
+      if (d.intents.has('dirsek') && !itemIntents.has('dirsek')) return;
+      if (d.intents.has('dirsek_90') && !(itemText.includes('87') || itemText.includes('90'))) return;
+      if (!d.intents.has('traslama') && itemIntents.has('traslama')) return;
       const s = Math.max(similarity(d.name, item.name), similarity(d.name, item.code)) + dimensionBoost;
+      candidates.push({ item, score: s, listName: list.name });
       if (!best || s > best.score) best = { item, score: s, listName: list.name };
     }));
     if (best && best.score >= 0.05) {
-      out.push({ code: best.item.code, name: best.item.name, qty: d.qty, price: n(best.item.price), listName: best.listName });
+      const alternatives = candidates
+        .filter((c) => c.item.code !== best.item.code || c.item.name !== best.item.name)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3)
+        .map((c) => `${c.item.name} (${c.listName})`);
+      out.push({ code: best.item.code, name: best.item.name, qty: d.qty, price: n(best.item.price), listName: best.listName, alternatives });
     } else {
-      out.push({ code: '-', name: d.raw || d.name, qty: d.qty, price: 0, listName: 'Eşleşmedi' });
+      out.push({ code: '-', name: d.raw || d.name, qty: d.qty, price: 0, listName: 'Eşleşmedi', alternatives: [] });
     }
   });
   state.convertedRows = out;
@@ -307,7 +331,8 @@ function renderConverted() {
       <td contenteditable="true" data-k="name">${r.name}</td>
       <td contenteditable="true" data-k="qty">${r.qty}</td>
       <td contenteditable="true" data-k="price">${n(r.price).toFixed(2)}</td>
-      <td>${r.listName}</td>`;
+      <td>${r.listName}</td>
+      <td>${(r.alternatives || []).join(' | ')}</td>`;
     tr.querySelectorAll('[contenteditable=true]').forEach((cell) => {
       cell.addEventListener('input', () => { state.convertedRows[i][cell.dataset.k] = cell.textContent.trim(); });
     });
