@@ -12,6 +12,7 @@ const state = {
 };
 
 const $ = (id) => document.getElementById(id);
+const qs = (selector) => document.querySelector(selector);
 const normalize = (s) => (s || '').toString().toLowerCase().replace(/[^a-z0-9çğıöşü\s]/gi, ' ').replace(/\s+/g, ' ').trim();
 const n = (v) => Number(v) || 0;
 
@@ -50,11 +51,11 @@ function renderEditableRows(tbody, rows, mode) {
 }
 
 function renderPricePreview() {
-  renderEditableRows($('#price-preview-table tbody'), state.previewRows, 'preview');
+  renderEditableRows(qs('#price-preview-table tbody'), state.previewRows, 'preview');
 }
 
 function renderStoredLists() {
-  const tbody = $('#stored-lists-table tbody');
+  const tbody = qs('#stored-lists-table tbody');
   tbody.innerHTML = '';
   state.priceLists.forEach((list, idx) => {
     const tr = document.createElement('tr');
@@ -195,7 +196,7 @@ $('convert-demand').addEventListener('click', async () => {
 });
 
 function renderConverted() {
-  const tbody = $('#converted-table tbody');
+  const tbody = qs('#converted-table tbody');
   tbody.innerHTML = '';
   state.convertedRows.forEach((r, i) => {
     const tr = document.createElement('tr');
@@ -257,7 +258,7 @@ function totals() {
 }
 
 function renderOffer() {
-  const tbody = $('#offer-table tbody');
+  const tbody = qs('#offer-table tbody');
   tbody.innerHTML = '';
   state.offerRows.forEach((r, i) => {
     const line = n(r.qty) * n(r.price) * (1 - n(r.discount) / 100);
