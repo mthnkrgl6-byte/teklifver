@@ -27,6 +27,7 @@ const SEMANTIC_SYNONYMS = {
   dirsek90: 'dirsek90',
   boru: 'boru'
 };
+const STOPWORDS = new Set(['ve', 'ile', 'icin', 'için', 'adet', 'metre', 'mt', 'pn', 'mm', 'super', 'kalde']);
 
 menuButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -204,7 +205,18 @@ function similarity(a, b) {
   const bw = [...new Set(bb.split(' ').map(canon).filter(Boolean))];
   const common = aw.filter((w) => bw.includes(w)).length;
   const jaccard = common / Math.max((new Set([...aw, ...bw])).size, 1);
-  return Math.max(common / Math.max(aw.length, bw.length), jaccard);
+  const aJoined = aw.join(' ');
+  const bJoined = bw.join(' ');
+  const bigrams = (s) => {
+    const out = [];
+    for (let i = 0; i < s.length - 1; i += 1) out.push(s.slice(i, i + 2));
+    return out;
+  };
+  const ab = bigrams(aJoined);
+  const bb2 = bigrams(bJoined);
+  const bgCommon = ab.filter((g) => bb2.includes(g)).length;
+  const dice = (2 * bgCommon) / Math.max(ab.length + bb2.length, 1);
+  return Math.max(common / Math.max(aw.length, bw.length), jaccard, dice);
 }
 
 function extractDimensions(text) {
@@ -266,7 +278,11 @@ function parseDemandText(text) {
       .replace(/\b(adet|mt|metre|pcs|tane|kg|koli|paket)\b/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-    return { raw: line.trim(), name, qty, dimension: extractDimensions(line), nominalSize: extractNominalSize(line), intents: extractIntentTags(line) };
+    const mustTokens = name
+      .split(' ')
+      .map((w) => SEMANTIC_SYNONYMS[w] || w)
+      .filter((w) => w && w.length > 2 && !STOPWORDS.has(w));
+    return { raw: line.trim(), name, qty, dimension: extractDimensions(line), nominalSize: extractNominalSize(line), intents: extractIntentTags(line), mustTokens };
   }).filter((x) => x.name);
 }
 
@@ -316,7 +332,13 @@ function convertWithRules(demands, pools, options = {}) {
       if (d.intents.has('dirsek') && !itemIntents.has('dirsek') && !options.softIntent) return;
       if (d.intents.has('dirsek_90') && !(itemText.includes('87') || itemText.includes('90'))) return;
       if (!d.intents.has('traslama') && itemIntents.has('traslama')) return;
-      const s = Math.max(similarity(d.name, item.name), similarity(d.name, item.code)) + dimensionBoost;
+      const itemNorm = normalize(itemText);
+      const missingCriticalToken = (d.mustTokens || []).some((tok) => !itemNorm.includes(tok));
+      if (missingCriticalToken && (d.mustTokens || []).length <= 2) return;
+      const tokenCoverage = (d.mustTokens || []).length
+        ? (d.mustTokens.filter((tok) => itemNorm.includes(tok)).length / d.mustTokens.length)
+        : 0;
+      const s = Math.max(similarity(d.name, item.name), similarity(d.name, item.code)) + dimensionBoost + (tokenCoverage * 0.2);
       candidates.push({ item, score: s, listName: list.name });
       if (!best || s > best.score) best = { item, score: s, listName: list.name };
     }));
@@ -340,41 +362,46 @@ function convertWithRules(demands, pools, options = {}) {
 }
 
 $('convert-demand').addEventListener('click', async () => {
-  const selected = [...document.querySelectorAll('[data-converter-list]:checked')].map((o) => Number(o.dataset.converterList));
-  if (!selected.length) return alert('En az 1 fiyat listesi seçin');
-  let text = '';
-  if ($('manual-entry-check').checked || $('manual-demand').value.trim()) text += $('manual-demand').value + '\n';
-  const excelFile = $('excel-input').files[0];
-  const imageFile = $('image-input').files[0];
-  const pdfFile = $('pdf-input').files[0];
-  const wordFile = $('word-input').files[0];
-  if (excelFile) {
-    const parsed = await parseExcelFile(excelFile);
-    text += parsed.map((r) => `${r.name} ${r.qty || ''}`).join('\n');
-  }
-  if (imageFile) {
-    try {
-      alert('Görsel OCR işleniyor, lütfen bekleyin...');
-      const imageText = await extractTextFromImage(imageFile);
-      text += `\n${imageText}`;
-    } catch (err) {
-      console.error('OCR hatası:', err);
-      alert('Görselden metin okunamadı. Görseli daha net yükleyin.');
+  try {
+    const selected = [...document.querySelectorAll('[data-converter-list]:checked')].map((o) => Number(o.dataset.converterList));
+    if (!selected.length) return alert('En az 1 fiyat listesi seçin');
+    let text = '';
+    if ($('manual-entry-check').checked || $('manual-demand').value.trim()) text += $('manual-demand').value + '\n';
+    const excelFile = $('excel-input').files[0];
+    const imageFile = $('image-input').files[0];
+    const pdfFile = $('pdf-input').files[0];
+    const wordFile = $('word-input').files[0];
+    if (excelFile) {
+      const parsed = await parseExcelFile(excelFile);
+      text += parsed.map((r) => `${r.name} ${r.qty || ''}`).join('\n');
     }
-  }
-  if ((pdfFile || wordFile) && !excelFile && !imageFile && !$('manual-demand').value.trim()) {
-    alert('PDF/Word dönüştürme henüz desteklenmiyor. Lütfen metin, Excel veya görsel (OCR) kullanın.');
-    return;
-  }
-  if (!text.trim()) return alert('Dönüştürücü için metin veya dosya ekleyin');
+    if (imageFile) {
+      try {
+        alert('Görsel OCR işleniyor, lütfen bekleyin...');
+        const imageText = await extractTextFromImage(imageFile);
+        text += `\n${imageText}`;
+      } catch (err) {
+        console.error('OCR hatası:', err);
+        alert('Görselden metin okunamadı. Görseli daha net yükleyin.');
+      }
+    }
+    if ((pdfFile || wordFile) && !excelFile && !imageFile && !$('manual-demand').value.trim()) {
+      alert('PDF/Word dönüştürme henüz desteklenmiyor. Lütfen metin, Excel veya görsel (OCR) kullanın.');
+      return;
+    }
+    if (!text.trim()) return alert('Dönüştürücü için metin veya dosya ekleyin');
 
-  const demands = parseDemandText(text);
-  const pools = state.priceLists.filter((l) => selected.includes(l.id));
-  const out = convertWithRules(demands, pools, { minScore: 0.04, softIntent: false });
-  state.convertedRows = out;
-  renderConverted();
-  if (!out.length) {
-    alert('Seçili fiyat listelerinde talep metni ile eşleşen ürün bulunamadı. Ürün adlarını daha açık yazmayı deneyin.');
+    const demands = parseDemandText(text);
+    const pools = state.priceLists.filter((l) => selected.includes(l.id));
+    const out = convertWithRules(demands, pools, { minScore: 0.04, softIntent: false });
+    state.convertedRows = out;
+    renderConverted();
+    if (!out.length) {
+      alert('Seçili fiyat listelerinde talep metni ile eşleşen ürün bulunamadı. Ürün adlarını daha açık yazmayı deneyin.');
+    }
+  } catch (err) {
+    console.error('Dönüştürme sırasında beklenmeyen hata:', err);
+    alert('Dönüştürme sırasında hata oluştu. Lütfen dosyaları ve girişleri kontrol edip tekrar deneyin.');
   }
 });
 
