@@ -1,0 +1,54 @@
+:root {
+  --bg: #ebebeb;
+  --card: #f5f5f5;
+  --line: #9ca3af;
+  --text: #1f2937;
+  --accent: #f2c94c;
+  --green: #149f56;
+  --danger: #e53935;
+}
+* { box-sizing: border-box; font-family: Inter, sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+.layout { display: grid; grid-template-columns: 180px 1fr; min-height: 100vh; }
+.sidebar { border-right: 1px solid var(--line); padding: 16px 10px; display: flex; flex-direction: column; gap: 12px; }
+.brand { font-weight: 800; font-size: 38px; color: #0f4c81; margin: 4px 0 20px; text-transform: lowercase; }
+.menu-btn { border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 12px; cursor: pointer; }
+.menu-btn.active { background: #d8e8f4; font-weight: 600; }
+.content { padding: 16px; }
+.page.hidden { display: none; }
+h1 { margin: 0 0 16px; }
+.grid { display: grid; gap: 16px; }
+.two-col { grid-template-columns: 1fr 1fr; }
+.top { grid-template-columns: 1fr 1fr; }
+.bottom { margin-top: 16px; grid-template-columns: 2fr 1fr; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+.upload-row { display: grid; grid-template-columns: 1.2fr 1fr auto; gap: 8px; margin-bottom: 10px; }
+.table-wrapper { max-height: 320px; overflow: auto; border: 1px solid #cfd4dc; border-radius: 12px; background: white; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border-bottom: 1px solid #e5e7eb; padding: 8px; font-size: 14px; }
+th { background: #f8fafc; position: sticky; top: 0; }
+input[type='text'], input[type='number'], select, textarea { width: 100%; border: 1px solid #9aa4b2; border-radius: 10px; padding: 8px; background: #fff; }
+.table-actions { display: flex; gap: 8px; margin: 10px 0; }
+.btn { border: none; border-radius: 999px; padding: 9px 16px; font-weight: 700; cursor: pointer; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn.primary { background: #ef9e10; color: #fff; }
+.btn.warn { background: var(--accent); }
+.btn.success { background: var(--green); color: #fff; }
+.btn.light { background: #dbe6ef; }
+.btn.danger { background: var(--danger); color: #fff; }
+.header-row { display: flex; justify-content: space-between; align-items: center; }
+.file-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+.file-grid label { display: grid; gap: 4px; font-size: 13px; }
+.muted { color: #6b7280; }
+.chat-box { border: 1px solid #c5ced8; background: #fff; border-radius: 12px; padding: 10px; margin-bottom: 10px; }
+.chat-log { min-height: 80px; max-height: 160px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px; margin-bottom: 8px; font-size: 13px; }
+.chat-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; }
+.download-group { display: flex; gap: 8px; }
+.form-grid { display: grid; gap: 8px; margin-top: 12px; }
+.totals { margin: 12px 0; padding: 10px; background: #fff; border-radius: 12px; border: 1px solid var(--line); }
+#discount-list-selectors { display: grid; gap: 8px; }
+@media (max-width: 1100px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { flex-direction: row; align-items: center; }
+  .top,.two-col,.bottom { grid-template-columns: 1fr; }
+}
