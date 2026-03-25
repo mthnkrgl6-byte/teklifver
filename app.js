@@ -162,10 +162,9 @@ function refreshListSelectors() {
   const sel = $('converter-price-lists');
   sel.innerHTML = '';
   state.priceLists.forEach((l) => {
-    const opt = document.createElement('option');
-    opt.value = l.id;
-    opt.textContent = l.name;
-    sel.appendChild(opt);
+    const row = document.createElement('label');
+    row.innerHTML = `<input type="checkbox" data-converter-list="${l.id}" checked /> ${l.name}`;
+    sel.appendChild(row);
   });
 
   const detail = $('discount-list-selectors');
@@ -198,14 +197,19 @@ function parseDemandText(text) {
 }
 
 $('convert-demand').addEventListener('click', async () => {
-  const selected = [...$('converter-price-lists').selectedOptions].map((o) => Number(o.value));
+  const selected = [...document.querySelectorAll('[data-converter-list]:checked')].map((o) => Number(o.dataset.converterList));
   if (!selected.length) return alert('En az 1 fiyat listesi seçin');
   let text = '';
-  if ($('manual-entry-check').checked) text += $('manual-demand').value + '\n';
+  if ($('manual-entry-check').checked || $('manual-demand').value.trim()) text += $('manual-demand').value + '\n';
   const excelFile = $('excel-input').files[0];
   if (excelFile) {
     const parsed = await parseExcelFile(excelFile);
-    text += parsed.map((r) => `${r.name} ${r.price || ''}`).join('\n');
+    text += parsed.map((r) => `${r.name} ${r.qty || ''}`).join('\n');
+  }
+  const nonParsableFileExists = $('pdf-input').files[0] || $('word-input').files[0] || $('image-input').files[0];
+  if (nonParsableFileExists && !excelFile && !$('manual-demand').value.trim()) {
+    alert('PDF/Word/Görsel dosyaları bu demo sürümde metne dönüştürülmüyor. Lütfen metin girin veya Excel yükleyin.');
+    return;
   }
   if (!text.trim()) return alert('Dönüştürücü için metin veya dosya ekleyin');
 
@@ -222,6 +226,9 @@ $('convert-demand').addEventListener('click', async () => {
   });
   state.convertedRows = out;
   renderConverted();
+  if (!out.length) {
+    alert('Seçili fiyat listelerinde talep metni ile eşleşen ürün bulunamadı. Ürün adlarını daha açık yazmayı deneyin.');
+  }
 });
 
 function renderConverted() {

@@ -84,7 +84,7 @@
           <div class="grid top">
             <article class="card">
               <h2>Dönüştürücü</h2>
-              <label><input type="checkbox" id="manual-entry-check" /> Metin olarak gir</label>
+              <label><input type="checkbox" id="manual-entry-check" checked /> Metin olarak gir</label>
               <textarea id="manual-demand" rows="5" placeholder="Örn: 10 adet pprc dirsek 20 mm"></textarea>
               <div class="file-grid">
                 <label>PDF <input type="file" id="pdf-input" accept=".pdf" /></label>
@@ -93,7 +93,7 @@
                 <label>Görsel <input type="file" id="image-input" accept="image/*" /></label>
               </div>
               <label>Fiyat Listeleri Seçin</label>
-              <select id="converter-price-lists" multiple></select>
+              <div id="converter-price-lists" class="form-grid"></div>
               <button id="convert-demand" class="btn success">Dönüştür</button>
               <small class="muted">Eşleştirme, metin normalizasyonu ve benzerlik skoruyla yapılır.</small>
             </article>
