@@ -217,6 +217,15 @@ function isCloseDimension(demandDim, itemDim) {
   return firstRatioDiff <= 0.15 && secondRatioDiff <= 0.05;
 }
 
+function extractNominalSize(text) {
+  const src = (text || '').toString().toLowerCase();
+  const mmMatch = src.match(/(\d+(?:[\.,]\d+)?)\s*mm\b/);
+  if (mmMatch) return Number(mmMatch[1].replace(',', '.'));
+  const leadingMatch = src.match(/\b(\d+(?:[\.,]\d+)?)\s*(?:pp|pprc|pvc|boru|pn)\b/);
+  if (leadingMatch) return Number(leadingMatch[1].replace(',', '.'));
+  return null;
+}
+
 function parseDemandText(text) {
   return text.split(/\n|,/).map((line) => {
     const qtyMatch = line.match(/(\d+[\.,]?\d*)\s*(?:adet|mt|metre|pcs|tane|kg|koli|paket)\b/i)
@@ -228,7 +237,7 @@ function parseDemandText(text) {
       .replace(/\b(adet|mt|metre|pcs|tane|kg|koli|paket)\b/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-    return { raw: line.trim(), name, qty, dimension: extractDimensions(line) };
+    return { raw: line.trim(), name, qty, dimension: extractDimensions(line), nominalSize: extractNominalSize(line) };
   }).filter((x) => x.name);
 }
 
@@ -257,6 +266,8 @@ $('convert-demand').addEventListener('click', async () => {
     pools.forEach((list) => list.items.forEach((item) => {
       const demandDimension = d.dimension;
       const itemDimension = extractDimensions(`${item.code || ''} ${item.name || ''}`);
+      const demandNominalSize = d.nominalSize;
+      const itemNominalSize = extractNominalSize(`${item.code || ''} ${item.name || ''}`);
       if (demandDimension && !itemDimension) return;
       let dimensionBoost = 0;
       if (demandDimension && itemDimension) {
@@ -268,6 +279,8 @@ $('convert-demand').addEventListener('click', async () => {
           return;
         }
       }
+      if (!demandDimension && demandNominalSize && itemNominalSize && Math.abs(demandNominalSize - itemNominalSize) > 0.5) return;
+      if (d.name.includes('boru') && !normalize(item.name).includes('boru')) return;
       const s = Math.max(similarity(d.name, item.name), similarity(d.name, item.code)) + dimensionBoost;
       if (!best || s > best.score) best = { item, score: s, listName: list.name };
     }));
