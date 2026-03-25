@@ -8,7 +8,8 @@ const state = {
   previewRows: [],
   priceLists: JSON.parse(localStorage.getItem('priceLists') || '[]'),
   convertedRows: [],
-  offerRows: []
+  offerRows: [],
+  chatDemandText: ''
 };
 
 const $ = (id) => document.getElementById(id);
@@ -342,7 +343,19 @@ function convertWithRules(demands, pools, options = {}) {
       candidates.push({ item, score: s, listName: list.name });
       if (!best || s > best.score) best = { item, score: s, listName: list.name };
     }));
-    if (best && best.score >= minScore) {
+    if (!best || best.score < minScore) {
+      // Relaxed fallback pass to avoid empty conversions.
+      pools.forEach((list) => list.items.forEach((item) => {
+        const itemText = `${item.code || ''} ${item.name || ''}`;
+        const demandDimension = d.dimension;
+        const itemDimension = extractDimensions(itemText);
+        if (demandDimension && itemDimension && demandDimension !== itemDimension && !isReductionDimensionCompatible(demandDimension, itemDimension)) return;
+        const relaxedScore = Math.max(similarity(d.raw, item.name), similarity(d.raw, item.code));
+        if (!best || relaxedScore > best.score) best = { item, score: relaxedScore, listName: list.name };
+      }));
+    }
+
+    if (best && best.score >= 0.02) {
       const alternatives = candidates
         .filter((c) => c.item.code !== best.item.code || c.item.name !== best.item.name)
         .sort((a, b) => b.score - a.score)
@@ -361,12 +374,36 @@ function convertWithRules(demands, pools, options = {}) {
   return out;
 }
 
+function appendChatMessage(role, text) {
+  const log = $('chat-log');
+  const line = document.createElement('div');
+  line.innerHTML = `<b>${role}:</b> ${text}`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+$('chat-analyze').addEventListener('click', () => {
+  const raw = $('chat-input').value.trim();
+  if (!raw) return;
+  appendChatMessage('Müşteri', raw);
+  const prepared = raw
+    .replace(/[;]+/g, '\n')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  state.chatDemandText = prepared;
+  $('manual-demand').value = prepared;
+  appendChatMessage('ChatGPT', 'Talep analiz edildi ve Dönüştürücü metin alanına aktarıldı. Dönüştür butonuna basabilirsiniz.');
+  $('chat-input').value = '';
+});
+
 $('convert-demand').addEventListener('click', async () => {
   try {
     const selected = [...document.querySelectorAll('[data-converter-list]:checked')].map((o) => Number(o.dataset.converterList));
     if (!selected.length) return alert('En az 1 fiyat listesi seçin');
     let text = '';
-    if ($('manual-entry-check').checked || $('manual-demand').value.trim()) text += $('manual-demand').value + '\n';
+    if ($('manual-entry-check').checked || $('manual-demand').value.trim() || state.chatDemandText.trim()) {
+      text += ($('manual-demand').value.trim() || state.chatDemandText) + '\n';
+    }
     const excelFile = $('excel-input').files[0];
     const imageFile = $('image-input').files[0];
     const pdfFile = $('pdf-input').files[0];
