@@ -191,7 +191,11 @@ function parseDemandText(text) {
   return text.split(/\n|,/).map((line) => {
     const qtyMatch = line.match(/(\d+[\.,]?\d*)/);
     const qty = qtyMatch ? n(qtyMatch[1].replace(',', '.')) : 1;
-    const name = normalize(line.replace(/\d+[\.,]?\d*/g, ' '));
+    const normalized = normalize(line.replace(/\d+[\.,]?\d*/g, ' '));
+    const name = normalized
+      .replace(/\b(adet|mt|metre|pcs|tane|kg|koli|paket)\b/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
     return { raw: line.trim(), name, qty };
   }).filter((x) => x.name);
 }
@@ -222,7 +226,11 @@ $('convert-demand').addEventListener('click', async () => {
       const s = Math.max(similarity(d.name, item.name), similarity(d.name, item.code));
       if (!best || s > best.score) best = { item, score: s, listName: list.name };
     }));
-    if (best && best.score >= 0.2) out.push({ code: best.item.code, name: best.item.name, qty: d.qty, price: n(best.item.price), listName: best.listName });
+    if (best && best.score >= 0.05) {
+      out.push({ code: best.item.code, name: best.item.name, qty: d.qty, price: n(best.item.price), listName: best.listName });
+    } else {
+      out.push({ code: '-', name: d.raw || d.name, qty: d.qty, price: 0, listName: 'Eşleşmedi' });
+    }
   });
   state.convertedRows = out;
   renderConverted();
