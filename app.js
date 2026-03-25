@@ -382,6 +382,18 @@ function appendChatMessage(role, text) {
   log.scrollTop = log.scrollHeight;
 }
 
+function findClosestCatalogItem(demand, lists) {
+  let best = null;
+  lists.forEach((list) => list.items.forEach((item) => {
+    const itemText = `${item.code || ''} ${item.name || ''}`;
+    const itemDimension = extractDimensions(itemText);
+    if (demand.dimension && itemDimension && demand.dimension !== itemDimension && !isReductionDimensionCompatible(demand.dimension, itemDimension)) return;
+    const score = Math.max(similarity(demand.name, item.name), similarity(demand.raw, item.name), similarity(demand.raw, item.code));
+    if (!best || score > best.score) best = { item, score, listName: list.name };
+  }));
+  return best;
+}
+
 $('chat-analyze').addEventListener('click', () => {
   const raw = $('chat-input').value.trim();
   if (!raw) return;
@@ -390,9 +402,19 @@ $('chat-analyze').addEventListener('click', () => {
     .replace(/[;]+/g, '\n')
     .replace(/\s{2,}/g, ' ')
     .trim();
-  state.chatDemandText = prepared;
-  $('manual-demand').value = prepared;
-  appendChatMessage('ChatGPT', 'Talep analiz edildi ve Dönüştürücü metin alanına aktarıldı. Dönüştür butonuna basabilirsiniz.');
+  const parsedDemands = parseDemandText(prepared);
+  const lists = state.priceLists.length ? state.priceLists : [];
+  const correctedLines = parsedDemands.map((d) => {
+    const nearest = findClosestCatalogItem(d, lists);
+    if (nearest && nearest.score >= 0.2) {
+      return `${d.qty} adet ${nearest.item.name}`;
+    }
+    return `${d.qty} adet ${d.raw || d.name}`;
+  });
+  const correctedText = correctedLines.join('\n');
+  state.chatDemandText = correctedText;
+  $('manual-demand').value = correctedText;
+  appendChatMessage('ChatGPT', 'Talep analiz edildi, fiyat listesine en yakın ürün adlarıyla düzenlendi ve metin alanına aktarıldı.');
   $('chat-input').value = '';
 });
 
