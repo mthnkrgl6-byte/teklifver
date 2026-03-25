@@ -191,7 +191,14 @@ function extractDimensions(text) {
   const src = (text || '').toString().toLowerCase();
   const match = src.match(/(\d+(?:[\.,]\d+)?)\s*(?:x|×|\*|\/|-)\s*(\d+(?:[\.,]\d+)?)/);
   if (!match) return null;
-  return `${match[1].replace(',', '.')}x${match[2].replace(',', '.')}`;
+  const normalizeDimNumber = (value) => {
+    let v = value.trim();
+    if (/^\d{1,3}(\.\d{3})+$/.test(v)) v = v.replace(/\./g, '');
+    if (/^\d{1,3}(,\d{3})+$/.test(v)) v = v.replace(/,/g, '');
+    v = v.replace(',', '.');
+    return String(Number(v) || 0);
+  };
+  return `${normalizeDimNumber(match[1])}x${normalizeDimNumber(match[2])}`;
 }
 
 function parseDemandText(text) {
