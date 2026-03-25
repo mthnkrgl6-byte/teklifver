@@ -100,6 +100,12 @@ async function parseExcelFile(file) {
   return rows.map((r) => ({ code: `${r[0] || ''}`.trim(), name: `${r[1] || ''}`.trim(), price: n(r[2]) }));
 }
 
+async function extractTextFromImage(file) {
+  if (!window.Tesseract) throw new Error('OCR kütüphanesi yüklenemedi');
+  const result = await window.Tesseract.recognize(file, 'tur+eng');
+  return result?.data?.text || '';
+}
+
 $('preview-price').addEventListener('click', async () => {
   const file = getPriceFile();
   if (!file) {
@@ -339,13 +345,25 @@ $('convert-demand').addEventListener('click', async () => {
   let text = '';
   if ($('manual-entry-check').checked || $('manual-demand').value.trim()) text += $('manual-demand').value + '\n';
   const excelFile = $('excel-input').files[0];
+  const imageFile = $('image-input').files[0];
+  const pdfFile = $('pdf-input').files[0];
+  const wordFile = $('word-input').files[0];
   if (excelFile) {
     const parsed = await parseExcelFile(excelFile);
     text += parsed.map((r) => `${r.name} ${r.qty || ''}`).join('\n');
   }
-  const nonParsableFileExists = $('pdf-input').files[0] || $('word-input').files[0] || $('image-input').files[0];
-  if (nonParsableFileExists && !excelFile && !$('manual-demand').value.trim()) {
-    alert('PDF/Word/Görsel dosyaları bu demo sürümde metne dönüştürülmüyor. Lütfen metin girin veya Excel yükleyin.');
+  if (imageFile) {
+    try {
+      alert('Görsel OCR işleniyor, lütfen bekleyin...');
+      const imageText = await extractTextFromImage(imageFile);
+      text += `\n${imageText}`;
+    } catch (err) {
+      console.error('OCR hatası:', err);
+      alert('Görselden metin okunamadı. Görseli daha net yükleyin.');
+    }
+  }
+  if ((pdfFile || wordFile) && !excelFile && !imageFile && !$('manual-demand').value.trim()) {
+    alert('PDF/Word dönüştürme henüz desteklenmiyor. Lütfen metin, Excel veya görsel (OCR) kullanın.');
     return;
   }
   if (!text.trim()) return alert('Dönüştürücü için metin veya dosya ekleyin');
