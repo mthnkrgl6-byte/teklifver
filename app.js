@@ -201,6 +201,22 @@ function extractDimensions(text) {
   return `${normalizeDimNumber(match[1])}x${normalizeDimNumber(match[2])}`;
 }
 
+function parseDimensionParts(dim) {
+  if (!dim || !dim.includes('x')) return null;
+  const [a, b] = dim.split('x').map((v) => Number(v));
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  return { a, b };
+}
+
+function isCloseDimension(demandDim, itemDim) {
+  const d = parseDimensionParts(demandDim);
+  const i = parseDimensionParts(itemDim);
+  if (!d || !i) return false;
+  const firstRatioDiff = Math.abs(d.a - i.a) / Math.max(d.a, i.a, 1);
+  const secondRatioDiff = Math.abs(d.b - i.b) / Math.max(d.b, i.b, 1);
+  return firstRatioDiff <= 0.15 && secondRatioDiff <= 0.05;
+}
+
 function parseDemandText(text) {
   return text.split(/\n|,/).map((line) => {
     const qtyMatch = line.match(/(\d+[\.,]?\d*)\s*(?:adet|mt|metre|pcs|tane|kg|koli|paket)\b/i)
@@ -242,8 +258,17 @@ $('convert-demand').addEventListener('click', async () => {
       const demandDimension = d.dimension;
       const itemDimension = extractDimensions(`${item.code || ''} ${item.name || ''}`);
       if (demandDimension && !itemDimension) return;
-      if (demandDimension && itemDimension && demandDimension !== itemDimension) return;
-      const s = Math.max(similarity(d.name, item.name), similarity(d.name, item.code));
+      let dimensionBoost = 0;
+      if (demandDimension && itemDimension) {
+        if (demandDimension === itemDimension) {
+          dimensionBoost = 0.2;
+        } else if (isCloseDimension(demandDimension, itemDimension)) {
+          dimensionBoost = 0.05;
+        } else {
+          return;
+        }
+      }
+      const s = Math.max(similarity(d.name, item.name), similarity(d.name, item.code)) + dimensionBoost;
       if (!best || s > best.score) best = { item, score: s, listName: list.name };
     }));
     if (best && best.score >= 0.05) {
