@@ -333,77 +333,6 @@ function convertWithRules(demands, pools, options = {}) {
   return out;
 }
 
-function aiFilterText(text) {
-  return text
-    .replace(/\bpp\b/gi, 'pprc')
-    .replace(/\brediksiyon\b/gi, 'reduksiyon')
-    .replace(/\b87\s*derece\b/gi, '90 derece')
-    .replace(/\brekor\b/gi, 'reduksiyon');
-}
-
-async function convertWithAI(demands, pools, apiKey) {
-  const catalog = pools.flatMap((list) => list.items.map((item) => ({
-    code: item.code,
-    name: item.name,
-    price: n(item.price),
-    listName: list.name
-  })));
-  const payload = {
-    model: 'gpt-4.1-mini',
-    input: [
-      {
-        role: 'system',
-        content: `Sen bir teklif eşleştirme asistanısın. Kullanıcı taleplerini sadece verilen ürün kataloğu ile eşleştir. \nKurallar: mümkünse doğru ürün seç; eşleşme düşükse code '-' ve listName 'Eşleşmedi' dön. Redüksiyon için 25x20 ve 20x25 aynı kabul edilebilir. 87 derece dirsek 90 dereceyle eşleşebilir. Çıktı sadece JSON olsun.`
-      },
-      {
-        role: 'user',
-        content: JSON.stringify({ demands, catalog })
-      }
-    ],
-    text: {
-      format: {
-        type: 'json_schema',
-        name: 'match_result',
-        schema: {
-          type: 'object',
-          properties: {
-            rows: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  code: { type: 'string' },
-                  name: { type: 'string' },
-                  qty: { type: 'number' },
-                  price: { type: 'number' },
-                  listName: { type: 'string' }
-                },
-                required: ['code', 'name', 'qty', 'price', 'listName'],
-                additionalProperties: false
-              }
-            }
-          },
-          required: ['rows'],
-          additionalProperties: false
-        }
-      }
-    }
-  };
-  const response = await fetch('https://api.openai.com/v1/responses', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`
-    },
-    body: JSON.stringify(payload)
-  });
-  if (!response.ok) throw new Error(`AI API hatası: ${response.status}`);
-  const data = await response.json();
-  const raw = data.output_text || '{}';
-  const parsed = JSON.parse(raw);
-  return (parsed.rows || []).map((r) => ({ ...r, alternatives: [] }));
-}
-
 $('convert-demand').addEventListener('click', async () => {
   const selected = [...document.querySelectorAll('[data-converter-list]:checked')].map((o) => Number(o.dataset.converterList));
   if (!selected.length) return alert('En az 1 fiyat listesi seçin');
@@ -421,25 +350,9 @@ $('convert-demand').addEventListener('click', async () => {
   }
   if (!text.trim()) return alert('Dönüştürücü için metin veya dosya ekleyin');
 
-  const aiEnabled = $('ai-enabled').checked;
-  const apiKey = $('ai-api-key').value.trim();
-  const filteredText = aiEnabled ? aiFilterText(text) : text;
-  const demands = parseDemandText(filteredText);
+  const demands = parseDemandText(text);
   const pools = state.priceLists.filter((l) => selected.includes(l.id));
-  let out = [];
-  if (aiEnabled && apiKey) {
-    try {
-      out = await convertWithAI(demands, pools, apiKey);
-    } catch (err) {
-      console.error('AI eşleştirme başarısız, kurallı motora dönülüyor:', err);
-      alert('AI eşleştirme başarısız oldu, kurallı motor ile devam ediliyor.');
-      out = convertWithRules(demands, pools, { minScore: 0.03, softIntent: false });
-    }
-  } else {
-    out = aiEnabled
-      ? convertWithRules(demands, pools, { minScore: 0.03, softIntent: false })
-      : convertWithRules(demands, pools);
-  }
+  const out = convertWithRules(demands, pools, { minScore: 0.04, softIntent: false });
   state.convertedRows = out;
   renderConverted();
   if (!out.length) {
