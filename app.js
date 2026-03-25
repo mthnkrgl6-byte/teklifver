@@ -268,8 +268,9 @@ function extractIntentTags(text) {
   const s = normalize(text);
   const tags = new Set();
   if (s.includes('dirsek')) tags.add('dirsek');
-  if (s.includes('reduksiyon') || s.includes('rediksiyon') || s.includes('reduk')) tags.add('reduksiyon');
+  if (s.includes('reduksiyon') || s.includes('redüksiyon') || s.includes('rediksiyon') || s.includes('reduk')) tags.add('reduksiyon');
   if (s.includes('boru')) tags.add('boru');
+  if (s.includes('te') || s.includes('inegal')) tags.add('te');
   if (s.includes('traslama') || s.includes('traşlama')) tags.add('traslama');
   if (/\b(87|90)\b/.test(s) && s.includes('dirsek')) tags.add('dirsek_90');
   return tags;
@@ -303,7 +304,9 @@ function convertWithRules(demands, pools, options = {}) {
       }
       if (!demandDimension && demandNominalSize && itemNominalSize && Math.abs(demandNominalSize - itemNominalSize) > 0.5) return;
       if (d.intents.has('boru') && !itemIntents.has('boru') && !options.softIntent) return;
-      if (d.intents.has('reduksiyon') && !itemIntents.has('reduksiyon') && !options.softIntent) return;
+      if (d.intents.has('reduksiyon') && !itemIntents.has('reduksiyon')) return;
+      if (d.intents.has('reduksiyon') && itemIntents.has('te')) return;
+      if (d.intents.has('te') && !itemIntents.has('te')) return;
       if (d.intents.has('dirsek') && !itemIntents.has('dirsek') && !options.softIntent) return;
       if (d.intents.has('dirsek_90') && !(itemText.includes('87') || itemText.includes('90'))) return;
       if (!d.intents.has('traslama') && itemIntents.has('traslama')) return;
@@ -430,11 +433,11 @@ $('convert-demand').addEventListener('click', async () => {
     } catch (err) {
       console.error('AI eşleştirme başarısız, kurallı motora dönülüyor:', err);
       alert('AI eşleştirme başarısız oldu, kurallı motor ile devam ediliyor.');
-      out = convertWithRules(demands, pools, { minScore: 0.03, softIntent: true });
+      out = convertWithRules(demands, pools, { minScore: 0.03, softIntent: false });
     }
   } else {
     out = aiEnabled
-      ? convertWithRules(demands, pools, { minScore: 0.03, softIntent: true })
+      ? convertWithRules(demands, pools, { minScore: 0.03, softIntent: false })
       : convertWithRules(demands, pools);
   }
   state.convertedRows = out;
