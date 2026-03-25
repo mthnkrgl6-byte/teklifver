@@ -15,6 +15,7 @@ const $ = (id) => document.getElementById(id);
 const qs = (selector) => document.querySelector(selector);
 const normalize = (s) => (s || '').toString().toLowerCase().replace(/[^a-z0-9çğıöşü\s]/gi, ' ').replace(/\s+/g, ' ').trim();
 const n = (v) => Number(v) || 0;
+const SUPPORTED_PRICE_EXTENSIONS = ['xlsx', 'xls', 'csv'];
 
 menuButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -54,6 +55,20 @@ function renderPricePreview() {
   renderEditableRows(qs('#price-preview-table tbody'), state.previewRows, 'preview');
 }
 
+function getPriceFile() {
+  const fileInput = $('price-file');
+  const file = fileInput?.files?.[0] || null;
+  if (!file) return null;
+  const extension = file.name.split('.').pop()?.toLowerCase() || '';
+  if (!SUPPORTED_PRICE_EXTENSIONS.includes(extension)) return null;
+  return file;
+}
+
+function updatePreviewButtonState() {
+  const canPreview = Boolean(getPriceFile());
+  $('preview-price').disabled = !canPreview;
+}
+
 function renderStoredLists() {
   const tbody = qs('#stored-lists-table tbody');
   tbody.innerHTML = '';
@@ -75,11 +90,25 @@ async function parseExcelFile(file) {
 }
 
 $('preview-price').addEventListener('click', async () => {
-  const file = $('price-file').files[0];
-  if (!file) return alert('Dosya seçiniz');
-  state.previewRows = await parseExcelFile(file);
-  renderPricePreview();
+  const file = getPriceFile();
+  if (!file) {
+    alert('Lütfen geçerli bir Excel/CSV dosyası seçin (.xlsx, .xls, .csv).');
+    updatePreviewButtonState();
+    return;
+  }
+  try {
+    state.previewRows = await parseExcelFile(file);
+    if (!state.previewRows.length) {
+      alert('Dosya okundu ancak önizlenecek satır bulunamadı. İlk satır başlık olmalı.');
+    }
+    renderPricePreview();
+  } catch (err) {
+    console.error('Fiyat listesi parse hatası:', err);
+    alert('Dosya okunamadı. Lütfen dosya formatını kontrol edin ve tekrar deneyin.');
+  }
 });
+
+$('price-file').addEventListener('change', updatePreviewButtonState);
 
 $('add-preview-row').addEventListener('click', () => {
   state.previewRows.push({ code: '', name: '', price: 0 });
@@ -309,3 +338,4 @@ renderPricePreview();
 renderStoredLists();
 renderConverted();
 renderOffer();
+updatePreviewButtonState();
