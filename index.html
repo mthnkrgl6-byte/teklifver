@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Teklif Yönetim Platformu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="brand">kalde</div>
+        <button class="menu-btn active" data-page="quote">Teklif Merkezi</button>
+        <button class="menu-btn" data-page="price">Fiyat Listeleri</button>
+      </aside>
+
+      <main class="content">
+        <section id="price-page" class="page hidden">
+          <h1>Fiyat Listeleri</h1>
+          <div class="grid two-col">
+            <article class="card">
+              <h2>Liste Yükle</h2>
+              <div class="upload-row">
+                <input type="file" id="price-file" accept=".xlsx,.xls,.csv" />
+                <input type="text" id="price-list-name" placeholder="Liste adı" />
+                <button id="preview-price" class="btn warn">Önizle</button>
+              </div>
+              <div class="table-actions">
+                <button id="add-preview-row" class="btn light">Ürün Ekle</button>
+                <button id="remove-preview-row" class="btn danger">Sil</button>
+              </div>
+              <div class="table-wrapper">
+                <table id="price-preview-table">
+                  <thead>
+                    <tr>
+                      <th><input type="checkbox" id="select-all-preview" /></th>
+                      <th>Ürün Kodu</th>
+                      <th>Ürün</th>
+                      <th>Birim Fiyat</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <button id="upload-price-list" class="btn primary">Yükle</button>
+            </article>
+
+            <article class="card">
+              <h2>Yüklü Listeler</h2>
+              <div class="table-wrapper">
+                <table id="stored-lists-table">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>Yüklenme Tarihi</th>
+                      <th>Liste Adı</th>
+                      <th>Ürün Sayısı</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <div class="table-actions">
+                <button id="edit-list" class="btn light">Liste Düzenle</button>
+                <button id="delete-list" class="btn danger">Liste Sil</button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="quote-page" class="page">
+          <div class="header-row">
+            <h1>Teklif Merkezi</h1>
+            <button id="new-quote" class="btn light">Yeni Teklif Oluştur</button>
+          </div>
+
+          <div class="grid top">
+            <article class="card">
+              <h2>Dönüştürücü</h2>
+              <label><input type="checkbox" id="manual-entry-check" checked /> Metin olarak gir</label>
+              <textarea id="manual-demand" rows="5" placeholder="Örn: 10 adet pprc dirsek 20 mm"></textarea>
+              <div class="file-grid">
+                <label>PDF <input type="file" id="pdf-input" accept=".pdf" /></label>
+                <label>Word <input type="file" id="word-input" accept=".doc,.docx" /></label>
+                <label>Excel <input type="file" id="excel-input" accept=".xls,.xlsx,.csv" /></label>
+                <label>Görsel <input type="file" id="image-input" accept="image/*" /></label>
+              </div>
+              <label>Fiyat Listeleri Seçin</label>
+              <div id="converter-price-lists" class="form-grid"></div>
+              <button id="convert-demand" class="btn success">Dönüştür</button>
+              <small class="muted">Eşleştirme, ürün tipi + ölçü + isim benzerliği kurallarıyla yapılır.</small>
+            </article>
+
+            <article class="card">
+              <h2>Dönüştürme Önizlemesi</h2>
+              <div class="table-actions">
+                <button id="add-convert-row" class="btn light">Ürün Ekle</button>
+                <button id="remove-convert-row" class="btn danger">Ürün Sil</button>
+              </div>
+              <div class="table-wrapper">
+                <table id="converted-table">
+                  <thead>
+                    <tr>
+                      <th><input type="checkbox" id="select-all-converted" /></th>
+                      <th>Ürün Kodu</th>
+                      <th>Ürün</th>
+                      <th>Adet</th>
+                      <th>Birim Fiyat</th>
+                      <th>Kaynak Liste</th>
+                      <th>Alternatifler</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <button id="move-to-offer" class="btn warn">Teklif Kısmına Aktar</button>
+            </article>
+          </div>
+
+          <div class="grid bottom">
+            <article class="card">
+              <h2>TEKLİF</h2>
+              <div class="table-wrapper">
+                <table id="offer-table">
+                  <thead>
+                    <tr>
+                      <th>Ürün Kodu</th>
+                      <th>Ürün</th>
+                      <th>Adet</th>
+                      <th>Birim Fiyat</th>
+                      <th>İskonto %</th>
+                      <th>İskontolu Satır</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <h3>İndirme Seçenekleri</h3>
+              <div class="download-group">
+                <button class="btn light" data-download="excel">Excel</button>
+                <button class="btn light" data-download="pdf">PDF</button>
+                <button class="btn light" data-download="word">Word</button>
+              </div>
+            </article>
+
+            <article class="card">
+              <h2>Teklif Detayları</h2>
+              <div id="discount-list-selectors"></div>
+              <div class="form-grid">
+                <label>KDV Oranı (%) <input type="number" id="vat-rate" value="20" /></label>
+                <label>Ödeme Seçeneği
+                  <select id="payment-method">
+                    <option value="nakit">Nakit</option>
+                    <option value="kart">Kart</option>
+                    <option value="cek">Çek</option>
+                  </select>
+                </label>
+                <label>Vade Farkı (%) <input type="number" id="maturity-rate" value="0" /></label>
+                <label>Teklif Firması <input type="text" id="company" /></label>
+                <label>Geçerlilik Süresi <input type="text" id="validity" placeholder="Örn: 30 gün" /></label>
+                <label>Açıklama <textarea id="description" rows="4"></textarea></label>
+              </div>
+              <div id="totals" class="totals"></div>
+              <button id="create-offer" class="btn danger">Teklif Ver</button>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
