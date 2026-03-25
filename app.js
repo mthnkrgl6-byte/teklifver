@@ -187,6 +187,13 @@ function similarity(a, b) {
   return common / Math.max(aw.length, bw.length);
 }
 
+function extractDimensions(text) {
+  const src = normalize(text);
+  const match = src.match(/(\d+(?:[\.,]\d+)?)\s*[x×*]\s*(\d+(?:[\.,]\d+)?)/);
+  if (!match) return null;
+  return `${match[1].replace(',', '.')}x${match[2].replace(',', '.')}`;
+}
+
 function parseDemandText(text) {
   return text.split(/\n|,/).map((line) => {
     const qtyMatch = line.match(/(\d+[\.,]?\d*)/);
@@ -196,7 +203,7 @@ function parseDemandText(text) {
       .replace(/\b(adet|mt|metre|pcs|tane|kg|koli|paket)\b/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-    return { raw: line.trim(), name, qty };
+    return { raw: line.trim(), name, qty, dimension: extractDimensions(line) };
   }).filter((x) => x.name);
 }
 
@@ -223,6 +230,9 @@ $('convert-demand').addEventListener('click', async () => {
   demands.forEach((d) => {
     let best = null;
     pools.forEach((list) => list.items.forEach((item) => {
+      const demandDimension = d.dimension;
+      const itemDimension = extractDimensions(`${item.code || ''} ${item.name || ''}`);
+      if (demandDimension && itemDimension && demandDimension !== itemDimension) return;
       const s = Math.max(similarity(d.name, item.name), similarity(d.name, item.code));
       if (!best || s > best.score) best = { item, score: s, listName: list.name };
     }));
