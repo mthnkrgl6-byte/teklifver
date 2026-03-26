@@ -315,6 +315,11 @@ function tokenizeWords(text) {
   return normalize(text).split(' ').filter(Boolean);
 }
 
+function hasWholeWord(text, word) {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`\\b${escaped}\\b`, 'i').test(normalize(text));
+}
+
 function detectPrimaryKeyword(text) {
   const normalizedText = normalize(text);
   const words = tokenizeWords(text);
@@ -359,14 +364,14 @@ function convertWithRules(demands, pools, options = {}) {
       if (d.intents.has('boru') && !itemIntents.has('boru') && !options.softIntent) return;
       if (d.intents.has('reduksiyon') && !itemIntents.has('reduksiyon')) return;
       if (d.intents.has('reduksiyon') && itemIntents.has('te')) return;
-      if (d.intents.has('te') && !itemIntents.has('te')) return;
+      if (d.intents.has('te') && !hasWholeWord(itemText, 'te')) return;
       if (d.intents.has('dirsek') && !itemIntents.has('dirsek') && !options.softIntent) return;
       if (d.intents.has('dirsek_90') && !(itemText.includes('87') || itemText.includes('90'))) return;
       if (!d.intents.has('traslama') && itemIntents.has('traslama')) return;
       if (d.primaryKeyword) {
         if (d.primaryKeyword.includes(' ')) {
           if (!normalize(itemText).includes(d.primaryKeyword)) return;
-        } else if (!itemWords.includes(d.primaryKeyword)) {
+        } else if (!hasWholeWord(itemText, d.primaryKeyword)) {
           return;
         }
       }
