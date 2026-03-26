@@ -264,8 +264,12 @@ function extractNominalSize(text) {
   const src = (text || '').toString().toLowerCase();
   const mmMatch = src.match(/(\d+(?:[\.,]\d+)?)\s*mm\b/);
   if (mmMatch) return Number(mmMatch[1].replace(',', '.'));
-  const leadingMatch = src.match(/\b(\d+(?:[\.,]\d+)?)\s*(?:pp|pprc|pvc|boru|pn)\b/);
+  const leadingMatch = src.match(/\b(\d+(?:[\.,]\d+)?)\s*(?:pp|pprc|pvc|boru|pn|te|dirsek|reduksiyon)\b/);
   if (leadingMatch) return Number(leadingMatch[1].replace(',', '.'));
+  const dimMatch = src.match(/(\d+(?:[\.,]\d+)?)\s*(?:x|×|\*|\/|-)\s*(\d+(?:[\.,]\d+)?)/);
+  if (dimMatch) return Number(dimMatch[1].replace(',', '.'));
+  const anyLeadingNumber = src.match(/\b(\d+(?:[\.,]\d+)?)\b/);
+  if (anyLeadingNumber) return Number(anyLeadingNumber[1].replace(',', '.'));
   return null;
 }
 
