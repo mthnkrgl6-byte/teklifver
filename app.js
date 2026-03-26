@@ -29,6 +29,7 @@ const SEMANTIC_SYNONYMS = {
   boru: 'boru'
 };
 const STOPWORDS = new Set(['ve', 'ile', 'icin', 'için', 'adet', 'metre', 'mt', 'pn', 'mm', 'super', 'kalde']);
+const PRODUCT_KEYWORDS = ['te', 'reduksiyon', 'dirsek', 'boru', 'manşon', 'vana', 'kör', 'tapa', 'nipel', 'rakor'];
 
 menuButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -283,7 +284,16 @@ function parseDemandText(text) {
       .split(' ')
       .map((w) => SEMANTIC_SYNONYMS[w] || w)
       .filter((w) => w && w.length > 2 && !STOPWORDS.has(w));
-    return { raw: line.trim(), name, qty, dimension: extractDimensions(line), nominalSize: extractNominalSize(line), intents: extractIntentTags(line), mustTokens };
+    return {
+      raw: line.trim(),
+      name,
+      qty,
+      dimension: extractDimensions(line),
+      nominalSize: extractNominalSize(line),
+      intents: extractIntentTags(line),
+      mustTokens,
+      primaryKeyword: detectPrimaryKeyword(line)
+    };
   }).filter((x) => x.name);
 }
 
@@ -301,6 +311,23 @@ function extractIntentTags(text) {
   return tags;
 }
 
+function tokenizeWords(text) {
+  return normalize(text).split(' ').filter(Boolean);
+}
+
+function detectPrimaryKeyword(text) {
+  const normalizedText = normalize(text);
+  const words = tokenizeWords(text);
+  for (const keyword of PRODUCT_KEYWORDS) {
+    if (keyword.includes(' ')) {
+      if (normalizedText.includes(keyword)) return keyword;
+    } else if (words.includes(keyword)) {
+      return keyword;
+    }
+  }
+  return '';
+}
+
 function convertWithRules(demands, pools, options = {}) {
   const minScore = options.minScore ?? 0.05;
   const out = [];
@@ -314,6 +341,7 @@ function convertWithRules(demands, pools, options = {}) {
       const demandNominalSize = d.nominalSize;
       const itemNominalSize = extractNominalSize(itemText);
       const itemIntents = extractIntentTags(itemText);
+      const itemWords = tokenizeWords(itemText);
       if (demandDimension && !itemDimension) return;
       let dimensionBoost = 0;
       if (demandDimension && itemDimension) {
@@ -335,6 +363,13 @@ function convertWithRules(demands, pools, options = {}) {
       if (d.intents.has('dirsek') && !itemIntents.has('dirsek') && !options.softIntent) return;
       if (d.intents.has('dirsek_90') && !(itemText.includes('87') || itemText.includes('90'))) return;
       if (!d.intents.has('traslama') && itemIntents.has('traslama')) return;
+      if (d.primaryKeyword) {
+        if (d.primaryKeyword.includes(' ')) {
+          if (!normalize(itemText).includes(d.primaryKeyword)) return;
+        } else if (!itemWords.includes(d.primaryKeyword)) {
+          return;
+        }
+      }
       const itemNorm = normalize(itemText);
       const missingCriticalToken = (d.mustTokens || []).some((tok) => !itemNorm.includes(tok));
       if (missingCriticalToken && (d.mustTokens || []).length <= 2) return;
@@ -388,8 +423,10 @@ function findClosestCatalogItem(demand, lists) {
   let best = null;
   lists.forEach((list) => list.items.forEach((item) => {
     const itemText = `${item.code || ''} ${item.name || ''}`;
+    const itemWords = tokenizeWords(itemText);
     const itemDimension = extractDimensions(itemText);
     if (demand.dimension && itemDimension && demand.dimension !== itemDimension && !isReductionDimensionCompatible(demand.dimension, itemDimension)) return;
+    if (demand.primaryKeyword && !itemWords.includes(demand.primaryKeyword)) return;
     const score = Math.max(similarity(demand.name, item.name), similarity(demand.raw, item.name), similarity(demand.raw, item.code));
     if (!best || score > best.score) best = { item, score, listName: list.name };
   }));
