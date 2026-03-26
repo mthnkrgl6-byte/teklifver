@@ -29,6 +29,7 @@ const SEMANTIC_SYNONYMS = {
   boru: 'boru'
 };
 const STOPWORDS = new Set(['ve', 'ile', 'icin', 'için', 'adet', 'metre', 'mt', 'pn', 'mm', 'super', 'kalde']);
+const PRODUCT_KEYWORDS = ['te', 'reduksiyon', 'dirsek', 'boru', 'manşon', 'vana', 'kör', 'tapa', 'nipel', 'rakor'];
 
 menuButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -283,20 +284,53 @@ function parseDemandText(text) {
       .split(' ')
       .map((w) => SEMANTIC_SYNONYMS[w] || w)
       .filter((w) => w && w.length > 2 && !STOPWORDS.has(w));
-    return { raw: line.trim(), name, qty, dimension: extractDimensions(line), nominalSize: extractNominalSize(line), intents: extractIntentTags(line), mustTokens };
+    return {
+      raw: line.trim(),
+      name,
+      qty,
+      dimension: extractDimensions(line),
+      nominalSize: extractNominalSize(line),
+      intents: extractIntentTags(line),
+      mustTokens,
+      primaryKeyword: detectPrimaryKeyword(line)
+    };
   }).filter((x) => x.name);
 }
 
 function extractIntentTags(text) {
   const s = normalize(text);
+  const words = s.split(' ').filter(Boolean);
+  const hasWord = (w) => words.includes(w);
   const tags = new Set();
-  if (s.includes('dirsek')) tags.add('dirsek');
-  if (s.includes('reduksiyon') || s.includes('redüksiyon') || s.includes('rediksiyon') || s.includes('reduk')) tags.add('reduksiyon');
-  if (s.includes('boru')) tags.add('boru');
-  if (s.includes('te') || s.includes('inegal')) tags.add('te');
-  if (s.includes('traslama') || s.includes('traşlama')) tags.add('traslama');
-  if (/\b(87|90)\b/.test(s) && s.includes('dirsek')) tags.add('dirsek_90');
+  if (hasWord('dirsek')) tags.add('dirsek');
+  if (hasWord('reduksiyon') || hasWord('redüksiyon') || hasWord('rediksiyon') || hasWord('reduk')) tags.add('reduksiyon');
+  if (hasWord('boru')) tags.add('boru');
+  if (hasWord('te') || s.includes('inegal te') || s.includes('esit te') || s.includes('eşit te')) tags.add('te');
+  if (hasWord('traslama') || hasWord('traşlama')) tags.add('traslama');
+  if (/\b(87|90)\b/.test(s) && hasWord('dirsek')) tags.add('dirsek_90');
   return tags;
+}
+
+function tokenizeWords(text) {
+  return normalize(text).split(' ').filter(Boolean);
+}
+
+function hasWholeWord(text, word) {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`\\b${escaped}\\b`, 'i').test(normalize(text));
+}
+
+function detectPrimaryKeyword(text) {
+  const normalizedText = normalize(text);
+  const words = tokenizeWords(text);
+  for (const keyword of PRODUCT_KEYWORDS) {
+    if (keyword.includes(' ')) {
+      if (normalizedText.includes(keyword)) return keyword;
+    } else if (words.includes(keyword)) {
+      return keyword;
+    }
+  }
+  return '';
 }
 
 function convertWithRules(demands, pools, options = {}) {
@@ -312,6 +346,7 @@ function convertWithRules(demands, pools, options = {}) {
       const demandNominalSize = d.nominalSize;
       const itemNominalSize = extractNominalSize(itemText);
       const itemIntents = extractIntentTags(itemText);
+      const itemWords = tokenizeWords(itemText);
       if (demandDimension && !itemDimension) return;
       let dimensionBoost = 0;
       if (demandDimension && itemDimension) {
@@ -329,10 +364,17 @@ function convertWithRules(demands, pools, options = {}) {
       if (d.intents.has('boru') && !itemIntents.has('boru') && !options.softIntent) return;
       if (d.intents.has('reduksiyon') && !itemIntents.has('reduksiyon')) return;
       if (d.intents.has('reduksiyon') && itemIntents.has('te')) return;
-      if (d.intents.has('te') && !itemIntents.has('te')) return;
+      if (d.intents.has('te') && !hasWholeWord(itemText, 'te')) return;
       if (d.intents.has('dirsek') && !itemIntents.has('dirsek') && !options.softIntent) return;
       if (d.intents.has('dirsek_90') && !(itemText.includes('87') || itemText.includes('90'))) return;
       if (!d.intents.has('traslama') && itemIntents.has('traslama')) return;
+      if (d.primaryKeyword) {
+        if (d.primaryKeyword.includes(' ')) {
+          if (!normalize(itemText).includes(d.primaryKeyword)) return;
+        } else if (!hasWholeWord(itemText, d.primaryKeyword)) {
+          return;
+        }
+      }
       const itemNorm = normalize(itemText);
       const missingCriticalToken = (d.mustTokens || []).some((tok) => !itemNorm.includes(tok));
       if (missingCriticalToken && (d.mustTokens || []).length <= 2) return;
@@ -343,7 +385,7 @@ function convertWithRules(demands, pools, options = {}) {
       candidates.push({ item, score: s, listName: list.name });
       if (!best || s > best.score) best = { item, score: s, listName: list.name };
     }));
-    if (!best || best.score < minScore) {
+    if ((!best || best.score < minScore) && d.intents.size === 0) {
       // Relaxed fallback pass to avoid empty conversions.
       pools.forEach((list) => list.items.forEach((item) => {
         const itemText = `${item.code || ''} ${item.name || ''}`;
@@ -386,8 +428,10 @@ function findClosestCatalogItem(demand, lists) {
   let best = null;
   lists.forEach((list) => list.items.forEach((item) => {
     const itemText = `${item.code || ''} ${item.name || ''}`;
+    const itemWords = tokenizeWords(itemText);
     const itemDimension = extractDimensions(itemText);
     if (demand.dimension && itemDimension && demand.dimension !== itemDimension && !isReductionDimensionCompatible(demand.dimension, itemDimension)) return;
+    if (demand.primaryKeyword && !itemWords.includes(demand.primaryKeyword)) return;
     const score = Math.max(similarity(demand.name, item.name), similarity(demand.raw, item.name), similarity(demand.raw, item.code));
     if (!best || score > best.score) best = { item, score, listName: list.name };
   }));
