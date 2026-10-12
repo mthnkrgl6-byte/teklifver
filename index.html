@@ -891,6 +891,29 @@ function quoteTypeExact(request,p){
  if(!wanted.length||!actual.length||wanted.join('|')!==actual.join('|'))return false;
  return quoteProductSubtype(request).join('|')===quoteProductSubtype(p.name||'').join('|');
 }
+
+function quoteInchMeasure(v){
+ const t=norm(canonicalOrderMeasure(v));
+ const match=t.match(/(?:^|\s)(\d{1,2}\s+\d{1,2}\/\d{1,2}|\d{1,2}\/\d{1,2})(?=\s|$)/);
+ return match?match[1].replace(/\s+/g,' '):'';
+}
+function quotePressure(v){
+ const m=norm(v).match(/\b(?:pn|sdr|sn)\s*(\d{1,3})\b/);
+ return m?m[0].replace(/\s+/g,''):'';
+}
+function quoteSeriesMatches(q,p){
+ const request=norm(q),product=norm([p.name||'',p.section||'',p.list||''].join(' '));
+ for(const specific of ['3k','pn10','pn16','pn20','pn25','fr','inflex']){
+  if(specific.startsWith('pn'))continue;
+  if(new RegExp('(^|\\s)'+specific+'(?=\\s|$)').test(request)&&!new RegExp('(^|\\s)'+specific+'(?=\\s|$)').test(product))return false;
+ }
+ const requestedPressure=quotePressure(q),productPressure=quotePressure(p.name||'');
+ if(requestedPressure&&productPressure!==requestedPressure)return false;
+ const inch=quoteInchMeasure(q);
+ if(inch && quoteInchMeasure(p.name||p.size||'')!==inch)return false;
+ return true;
+}
+
 function scoreFor(query,p,resolved){
  const chosen=resolved||dictionaryResolve(query);
  const q=chosen.text;
@@ -899,6 +922,7 @@ function scoreFor(query,p,resolved){
  if(!qt.length||!dictionaryFamilyMatches(chosen,p))return 0;
  const codeOnly=!!(p.code&&q===norm(p.code));
  if(!codeOnly&&!quoteTypeExact(q,p))return 0;
+ if(!codeOnly&&!quoteSeriesMatches(q,p))return 0;
  const qmat=catalogMaterial(q),pmat=catalogMaterial([p.name,p.section||''].join(' '));
  if(qmat&&pmat&&qmat!==pmat)return 0;
  // Neither length nor diameter may be swapped for another size.
