@@ -4,7 +4,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit, parse_qs
 from http.cookies import SimpleCookie
-import argparse, base64, hashlib, hmac, json, os, secrets, sqlite3, threading, time, webbrowser
+import argparse, base64, gzip, hashlib, hmac, json, os, secrets, sqlite3, threading, time, webbrowser
 
 HERE = Path(__file__).resolve().parent
 STORE = Path(os.environ.get("KALDE_DATA_DIR", str(HERE / "data"))).resolve()
@@ -45,12 +45,12 @@ BACKUPS = STORE / "daily-json-backups"
 BACKUPS.mkdir(parents=True, exist_ok=True)
 def save_daily_backup(compact, revision, timestamp):
     label=time.strftime("%Y-%m-%d",time.gmtime(timestamp))
-    target=BACKUPS / (label+".json")
+    target=BACKUPS / (label+".json.gz")
     temporary=BACKUPS / ("."+label+".tmp")
     try:
-        temporary.write_text(compact,encoding="utf-8")
+        temporary.write_bytes(gzip.compress(compact.encode("utf-8"),compresslevel=6))
         os.replace(str(temporary),str(target))
-        dated=sorted(BACKUPS.glob("????-??-??.json"))
+        dated=sorted(BACKUPS.glob("????-??-??.json.gz"))
         for obsolete in dated[:-30]:
             obsolete.unlink(missing_ok=True)
     except Exception as exc:
@@ -161,7 +161,7 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/","/index.html"):return self.html(200,(HERE/"index.html").read_bytes())
         if path=="/api/state":return self.respond(200,latest())
         if path=="/api/daily-backups":
-            items=[{"file":p.name,"size":p.stat().st_size} for p in sorted(BACKUPS.glob("????-??-??.json"),reverse=True)]
+            items=[{"file":p.name[:-3],"size":p.stat().st_size} for p in sorted(BACKUPS.glob("????-??-??.json.gz"),reverse=True)]
             return self.respond(200,{"backups":items,"retentionDays":30,"sameVolume":True})
         if path.startswith("/api/daily-backups/"):
             name=path.rsplit("/",1)[-1]
@@ -169,9 +169,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(400,{"error":"Geçersiz günlük yedek adı"})
             if not __import__("re").fullmatch(r"\d{4}-\d{2}-\d{2}\.json",name):
                 return self.respond(400,{"error":"Geçersiz günlük yedek adı"})
-            file=BACKUPS/name
+            file=BACKUPS/(name+".gz")
             if not file.is_file():return self.respond(404,{"error":"Yedek bulunamadı"})
-            body=file.read_bytes()
+            body=gzip.decompress(file.read_bytes())
             self.common(200,"application/json; charset=utf-8",len(body),{"Content-Disposition":'attachment; filename="'+name+'"'})
             return self.wfile.write(body)
         if path=="/api/previous-state":
