@@ -413,7 +413,7 @@ function ensureDefaultGroups(){
  const current=Array.isArray(db.groups)?db.groups:[];
  db.groups=defaultGroups.map(g=>{
   const saved=current.find(v=>v.id===g.id)||current.find(v=>norm(v.name)===norm(g.name));
-  return {...g,discount:parseDiscountRate(saved?.discount)??0};
+  return {...g,discount:parseDiscountRate(saved?.discount)??0,maxDiscount:parseDiscountRate(saved?.maxDiscount)??100};
  });
  return db.groups.length;
 }
@@ -468,7 +468,7 @@ function safetyDiff(list,rows){
  const previous=new Map(db.products.filter(p=>p.list===list).map(p=>[p.code?'c:'+norm(p.code):'n:'+norm(p.name)+'|'+norm(p.section||''),p]));
  return rows.filter(r=>r.name&&!r.excluded&&!r.imported).map(r=>{
   const old=previous.get(r.code?'c:'+norm(r.code):'n:'+norm(r.name)+'|'+norm(r.section||''));
-  const before=old?.price??null,after=r.price??null;
+  const before=old?.price??null,after=r.price===null&&old?old.price??null:r.price??null;
   const kind=!old?'new':before===after?'same':'changed';
   return {code:r.code||'',name:r.name,page:r.page||'',before,after,kind,delta:old&&before!==null&&before!==0&&after!==null?100*(after-before)/before:null};
  });
@@ -1001,7 +1001,7 @@ function addOfferLine(){lines.push({id:uid(),raw:'',name:'',qty:1,unit:'adet',pr
 function quoteDiscountLimit(l){
  const p=db.products.find(p=>p.id===l.productId);
  const group=db.groups.find(g=>g.id===p?.groupId);
- const num=Number(group?.maxDiscount??100);
+ const num=Number(l.catalogSnapshot?.maxDiscount??group?.maxDiscount??100);
  return Number.isFinite(num)&&num>=0&&num<=100?num:100;
 }
 function quotePricingError(l){
@@ -1038,7 +1038,7 @@ function renderLines(){$('offerLines').innerHTML=lines.map(l=>{
   const p=db.products.find(p=>p.id===l.productId);
   const group=db.groups.find(g=>g.id===p?.groupId);
   const prior=l.catalogSnapshot;
-  return {...structuredClone(l),catalogSnapshot:prior||(p?{id:p.id,code:p.code||'',name:p.name,section:p.section||'',list:p.list||'',category:p.category||'',groupName:group?.name||'',sourcePage:p.sourcePage||''}:null)};
+  return {...structuredClone(l),catalogSnapshot:prior||(p?{id:p.id,code:p.code||'',name:p.name,section:p.section||'',list:p.list||'',category:p.category||'',groupName:group?.name||'',maxDiscount:Number(group?.maxDiscount??100),sourcePage:p.sourcePage||''}:null)};
  });
  return {id:currentOfferId||uid(),date:$('offerDate').value,customer:$('customer').value,currency:$('currency').value,note:$('offerNote').value,lines:pinned,total:total()};
 }async function saveOffer(){if(!lines.length)return alert('Önce ürün satırı ekleyin.');if(quotePricingErrors().length)return alert('Teklif satırlarını düzeltin: '+quotePricingErrors().map(e=>e.line+'. satır: '+e.message).join('; '));const prev=structuredClone(db.offers);let offer=offerData();currentOfferId=offer.id;let i=db.offers.findIndex(x=>x.id===offer.id);if(i>=0)db.offers[i]=offer;else db.offers.push(offer);safetyChange('Teklif kaydedildi',(offer.customer||'Müşteri belirtilmedi')+' · '+offer.lines.length+' satır');const stored=await persist();if(!stored){db.offers=prev;renderAll();}alert(stored?'Teklif kaydedildi.':'Teklif kaydedilemedi. Veriyi korumak için JSON yedeği alın ve uygulamayı yerel sunucuda çalıştırın.')}function loadOffer(id){let o=db.offers.find(x=>x.id===id);if(!o)return;$('confirmQuotePrices').checked=false;currentOfferId=id;lines=structuredClone(o.lines);$('customer').value=o.customer;$('offerDate').value=o.date;$('currency').value=o.currency;$('offerNote').value=o.note;tab('request')}function delOffer(id){if(confirm('Teklif silinsin mi?')){const o=db.offers.find(v=>v.id===id);safetyChange('Teklif silindi',o?.customer||id);db.offers=db.offers.filter(o=>o.id!==id);persist()}}function renderSaved(){$('savedRows').innerHTML=db.offers.map(o=>`<tr><td>${esc(o.date)}</td><td>${esc(o.customer)}</td><td>${o.lines.length}</td><td>${money(o.total,o.currency)}</td><td><button class="btn secondary small" onclick="loadOffer('${o.id}')">Aç</button> <button class="btn red small" onclick="delOffer('${o.id}')">Sil</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty">Kayıtlı teklif bulunmuyor.</td></tr>'}
