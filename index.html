@@ -921,6 +921,7 @@ function addOfferLine(){lines.push({id:uid(),raw:'',name:'',qty:1,unit:'adet',pr
  const demanded=l.raw?extractOrderQuantity(l.raw).name:l.name;
  const interpreted=dictionaryResolve(orderMatchDescription(demanded));
  if(demanded&&scoreFor(demanded,p,interpreted)<=0){alert('Bu ürün müşterinin istediği tür ve ölçüyle eşleşmiyor. Yanlış türü seçmeyin.');l.productId='';l.status='review';renderLines();return;}
+ if(!demanded)l.name=p.name;
  l.price=p.price??null;l.unit=p.unit;l.discount=db.groups.find(g=>g.id===p.groupId)?.discount||0;l.status=p.price==null?'no-price':'ok'
  }else l.status='missing'}renderLines()}function removeLine(id){lines=lines.filter(l=>l.id!==id);renderLines()}
 function renderLines(){$('offerLines').innerHTML=lines.map(l=>{
