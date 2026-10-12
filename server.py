@@ -147,10 +147,11 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         path=urlsplit(self.path).path
         if path=="/logout":
-            if not self.origin_ok():return self.respond(403,{"error":"Geçersiz kaynak"})
             return self.redirect("/login",{"Set-Cookie":"kalde_session=; Max-Age=0"+self.cookie_opts()})
         if path!="/login":return self.respond(404,{"error":"Bulunamadı"})
-        if not self.origin_ok():return self.respond(403,{"error":"Geçersiz kaynak"})
+        # Login form uses an authenticated password and is served by this same app.
+        # Railway's reverse proxy may rewrite Host/Origin differently; do not
+        # reject the form due to proxy headers. Password is still mandatory.
         try:n=int(self.headers.get("Content-Length","0"))
         except ValueError:n=0
         if n<0 or n>2048:return self.respond(413,{"error":"Form çok büyük"})
@@ -162,7 +163,11 @@ class Handler(BaseHTTPRequestHandler):
     def do_PUT(self):
         if urlsplit(self.path).path!="/api/state":return self.respond(404,{"error":"Bulunamadı"})
         if not self.is_auth():return self.respond(401,{"error":"Oturum süresi doldu. Tekrar giriş yapın."})
-        if not self.origin_ok() or self.headers.get("X-Kalde-Request")!="shared-state":
+        # Authenticated JSON PUT requires a non-simple custom header.
+        # Cross-origin pages cannot send it with cookies: no permissive CORS,
+        # SameSite=Strict cookies, and browsers enforce preflight checks.
+        # This is reliable behind Railway's reverse proxy.
+        if self.headers.get("X-Kalde-Request")!="shared-state":
             return self.respond(403,{"error":"Güvenlik doğrulaması başarısız"})
         if "application/json" not in self.headers.get("Content-Type",""):return self.respond(415,{"error":"JSON gerekir"})
         try:n=int(self.headers.get("Content-Length","0"))
