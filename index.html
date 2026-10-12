@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0f2340">
-  <title>Ortak Akıllı Teklif Merkezi 3.8</title>
+  <title>Ortak Akıllı Teklif Merkezi 3.9</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -103,6 +103,16 @@
 .catalog-import-table .catalog-exclude{margin-top:9px;font-size:10px;color:#924f48;border:0;background:transparent;cursor:pointer;text-decoration:underline}
 .catalog-import-table tr.catalog-imported{opacity:.65;background:#f1f7f6}
 @media(max-width:720px){.catalog-review-heading{align-items:flex-start;flex-direction:column}}
+
+/* v3.9 — elle doğrulanan gerçek ürün türü */
+.catalog-type-editor{margin-top:10px;padding:10px;border:1px solid #f3d5b0;background:#fff8f0;border-radius:8px;max-width:320px;display:grid;gap:6px}
+.catalog-type-editor label{font-size:11px;font-weight:800;color:#8e4f11}
+.catalog-type-editor select{width:100%;font-size:12px;min-width:170px}
+.catalog-type-editor small{color:#926638;font-size:10px;line-height:1.5}
+.catalog-type-editor .catalog-custom-type{display:flex;flex-wrap:wrap;gap:6px}
+.catalog-type-editor .catalog-custom-type[hidden]{display:none!important}
+.catalog-type-editor .catalog-custom-type input{flex:1;min-width:150px}
+
 </style>
 </head>
 <body>
@@ -1344,6 +1354,79 @@ async function catalogReadSpreadsheet(file){
  for(const sh of wb.SheetNames){const out=catalogRowsFromSheet(wb.Sheets[sh],sh);result.rows.push(...out.results);if(!out.headerFound)result.warnings.push(`${sh}: ürün adı / stok kodu başlığı bulunamadı.`);if(out.skipped)result.warnings.push(`${sh}: ${out.skipped} boş veya tanımlanamayan satır atlandı.`);}
  return result;
 }
+
+// v3.9 — PDF/Excel satırındaki gerçek ürün türünü kullanıcı onayıyla belirle.
+// Ürün grubu (Plastik/Metal vb.) ile ürün türü (Dirsek/Çatal vb.) farklıdır.
+// Seçim kayda geçecek ürün adına işlenir; tek başına onay sayılmaz.
+const CATALOG_MANUAL_TYPES=[...new Set(CATALOG_TYPE_RULES.map(x=>x[0]).concat([
+ 'Baca','Havalandırma Parçası','Yağmur Süzgeci','Yarım Çatal','Flanş','Kör Tapa',
+ 'Köşe Bağlantısı','Askı Aparatı','Conta Yuvası','Termostatik Başlık','Kaplin'
+]))];
+function catalogManualTypeValid(row){
+ const type=catalogText(row.manualProductType||'');
+ const cleaned=norm(type),full=norm(row.name||'');
+ if(type.length<2||type.length>60||!/[a-zçğıöşü]{2}/i.test(type)||!full.endsWith(cleaned))return false;
+ if(catalogFamilyHeading(type)||/^(plastik|metal|altyapi sistemleri|radyator|diger|urun|urunler|sistem|sistemleri|ek parca|fiyat listesi)$/.test(cleaned))return false;
+ const detected=catalogSpecificType(row.name);
+ const typeDetected=catalogSpecificType(type);
+ return !(detected&&typeDetected&&detected!==typeDetected);
+}
+function catalogTypeControls(row,index,disabled){
+ const unresolved=(!catalogSpecificType(row.name)&&!catalogPipeLengthDimension(row.name))||!!row.manualProductType;
+ if(!unresolved)return '';
+ const chosen=catalogText(row.manualProductType||'');
+ const isPreset=CATALOG_MANUAL_TYPES.includes(chosen);
+ const selected=chosen?(isPreset?chosen:'__custom__'):'';
+ const options=CATALOG_MANUAL_TYPES.map(t=>`<option value="${esc(t)}" ${t===selected?'selected':''}>${esc(t)}</option>`).join('');
+ const customSelected=selected==='__custom__';
+ return `<div class="catalog-type-editor"><label for="catalogTypeSelect${index}">Gerçek ürün türünü seçin</label>
+ <select id="catalogTypeSelect${index}" aria-label="Gerçek ürün türü ${index+1}" onchange="catalogChooseType(${index},this.value)" ${disabled?'disabled':''}>
+ <option value="">— Tür belirleyin —</option>${options}<option value="__custom__" ${customSelected?'selected':''}>Başka tür yaz…</option></select>
+ <div class="catalog-custom-type" id="catalogCustomTypeWrap${index}" ${customSelected?'':'hidden'}>
+ <input id="catalogCustomType${index}" aria-label="Diğer ürün türü ${index+1}" placeholder="Örn. Hava Tahliye Parçası" value="${customSelected?esc(chosen):''}" ${disabled?'disabled':''}>
+ <button type="button" class="btn secondary small" onclick="catalogApplyManualType(${index},document.getElementById('catalogCustomType${index}').value)" ${disabled?'disabled':''}>Türü uygula</button></div>
+ <small>Kaynak belgeye göre seçin; tür ürün adına eklenir.</small></div>`;
+}
+function catalogChooseType(index,value){
+ const wrap=document.getElementById('catalogCustomTypeWrap'+index);
+ if(value==='__custom__'){if(wrap)wrap.hidden=false;document.getElementById('catalogCustomType'+index)?.focus();return;}
+ if(wrap)wrap.hidden=true;
+ catalogApplyManualType(index,value);
+}
+function catalogApplyManualType(index,value){
+ const row=pendingCatalog?.rows?.[index];
+ if(!row||row.imported||row.excluded)return;
+ const chosen=catalogText(value).slice(0,60);
+ row.reviewApproved=false;row.reviewMessageState='';
+ if(!chosen){
+  row.manualProductType='';
+  row.reviewMessage='Ürün türünü seçin veya ürün adında açıkça belirtin.';
+  catalogRefreshOneRow(index);catalogRefreshCounts();return;
+ }
+ if(chosen.length<2||!/([a-zçğıöşü]{2})/i.test(chosen)||catalogFamilyHeading(chosen)){
+  row.reviewMessage='Geçerli bir gerçek ürün türü yazın (ör. Dirsek, Çatal, Baca).';
+  row.reviewMessageState='error';catalogRefreshOneRow(index);catalogRefreshCounts();return;
+ }
+ let name=catalogText(row.name);
+ if(row.manualProductType&&norm(name).endsWith(norm(row.manualProductType)))
+  name=catalogText(name.slice(0,name.length-row.manualProductType.length));
+ const existing=catalogSpecificType(name),desired=catalogSpecificType(chosen);
+ const genericFamily=catalogFamilyHeading(name);
+ if(existing&&(!desired||existing!==desired)&&!genericFamily){
+  row.reviewMessage=`Mevcut ad "${existing}" ürün türünü içeriyor. "${chosen}" seçmek için ürün adını da düzeltin.`;
+  row.reviewMessageState='error';catalogRefreshOneRow(index);catalogRefreshCounts();return;
+ }
+ if(genericFamily)name=name.replace(/\s+(?:sistemleri|sistemi|fiyat listesi)$/i,'').trim();
+ if(!norm(name).endsWith(norm(chosen)))name=catalogText(name+' '+chosen);
+ row.name=name;row.baseName=name;row.nameEdited=true;row.manualProductType=chosen;
+ row.issues=(row.issues||[]).filter(t=>!/Ürün tipi (?:belirsiz|belirlenemedi)|Ana sistem başlığı/i.test(t));
+ row.reviewMessage=`Ürün türü "${chosen}" olarak belirtildi. Kaynaktan kontrol edip onay kutusunu işaretleyin.`;
+ row.reviewMessageState='';
+ catalogRefreshOneRow(index);
+ const sel=document.getElementById('catalogTypeSelect'+index);if(sel)sel.value=CATALOG_MANUAL_TYPES.includes(chosen)?chosen:'__custom__';
+ catalogRefreshCounts();
+}
+
 function catalogMaterialGroup(g){
  const name=typeof g==='string'?g:(g?.name||'');return catalogMaterial(name);
 }
@@ -1351,7 +1434,7 @@ function catalogMaterialGroup(g){
 function catalogRowSafety(r,list){
  const problems=[...(r.issues||[])];
  if(r.importConflict)problems.push('Aynı stok kodu başka tanımla bulundu');
- if(!catalogSpecificType(r.name)&&!catalogPipeLengthDimension(r.name))problems.push('Ürün tipi belirtilmemiş; otomatik aktarım durduruldu');
+ if(!catalogSpecificType(r.name)&&!catalogPipeLengthDimension(r.name)&&!catalogManualTypeValid(r))problems.push('Ürün tipi belirtilmemiş; otomatik aktarım durduruldu');
  if(/^sheet\s*\d+$/i.test(r.section||'')&&bareCatalogDimension(r.baseName||r.name))problems.push('Ürün başlığı eksik');
  const pdfMat=catalogMaterial(r.section||''),rowMat=catalogMaterial(r.name||'');
  if(pdfMat&&rowMat&&pdfMat!==rowMat)problems.push('PDF başlığı ve ürün açıklaması PP/PVC açısından uyuşmuyor');
@@ -1377,7 +1460,8 @@ function catalogPreviewStatus(message,type='note'){$('catalogStatus').textConten
 function catalogBlockingReview(row,list){
  const problems=[];
  if(!catalogText(row.name))problems.push('Ürün adı boş');
- if(!catalogSpecificType(row.name)&&!catalogPipeLengthDimension(row.name))problems.push('Gerçek ürün türü belirtilmemiş');
+ if(row.manualProductType&&!catalogManualTypeValid(row))problems.push('Seçilen gerçek ürün türü ürün adıyla uyuşmuyor');
+ if(!catalogSpecificType(row.name)&&!catalogPipeLengthDimension(row.name)&&!catalogManualTypeValid(row))problems.push('Gerçek ürün türü belirtilmemiş: ürün adının altından tür seçin');
  if(row.priceInputError)problems.push('Fiyat alanı geçersiz');
  if(row.price!==null&&(!Number.isFinite(row.price)||row.price<0))problems.push('Geçersiz fiyat');
  if(row.origin==='PDF'&&row.price!==null&&!catalogText(row.code))problems.push('Fiyatlı PDF ürünü için stok kodu gerekli');
@@ -1423,7 +1507,7 @@ function catalogRowResult(row,index,isRisk){
 function catalogRowHtml(row,index,isRisk){
  const {title,reasonHtml}=catalogRowResult(row,index,isRisk);
  const disabled=!!row.imported;
- const basic=`<td>${esc(row.page)}</td><td>${catalogField(index,'code',row.code,`Stok kodu ${index+1}`,false,disabled)}</td><td>${catalogField(index,'section',row.section||pendingCatalog.list,`Üst başlık ${index+1}`,true,disabled)}</td><td>${catalogField(index,'name',row.name,`Ürün adı ${index+1}`,true,disabled)}</td>`;
+ const basic=`<td>${esc(row.page)}</td><td>${catalogField(index,'code',row.code,`Stok kodu ${index+1}`,false,disabled)}</td><td>${catalogField(index,'section',row.section||pendingCatalog.list,`Üst başlık ${index+1}`,true,disabled)}</td><td>${catalogField(index,'name',row.name,`Ürün adı ${index+1}`,true,disabled)}${isRisk?catalogTypeControls(row,index,disabled):''}</td>`;
  const price=`${catalogField(index,'price',row.price===null?'':row.price,`Fiyat ${index+1}`,false,disabled)}`;
  const packageCell=catalogField(index,'packageQty',row.packageQty||'',`Koli adedi ${index+1}`,false,disabled);
  if(!isRisk)return `<tr class="${disabled?'catalog-imported':''}">${basic}<td>${price}</td><td>${packageCell}</td><td>${title}</td></tr>`;
@@ -1460,6 +1544,7 @@ function catalogRefreshOneRow(index){
  const {title,reasonHtml}=catalogRowResult(row,index,true);
  const titleEl=tr.querySelector('.catalog-current-status');if(titleEl)titleEl.innerHTML=title;
  const reasonsEl=tr.querySelector('.catalog-risk-reasons');if(reasonsEl)reasonsEl.innerHTML=reasonHtml;
+ const nameInput=tr.querySelector(`input[aria-label="Ürün adı ${index+1}"]`);if(nameInput&&document.activeElement!==nameInput)nameInput.value=row.name;
  const checkbox=tr.querySelector('input[type="checkbox"]');if(checkbox){checkbox.checked=!!row.reviewApproved;checkbox.disabled=!!row.imported||!!row.excluded;}
  const exclude=tr.querySelector('.catalog-exclude');if(exclude)exclude.textContent=row.excluded?'Tekrar dahil et':'Hariç tut';
  const feedback=tr.querySelector('.catalog-review-feedback');if(feedback){feedback.textContent=row.reviewMessage||'';feedback.dataset.state=row.reviewMessageState||'';}
@@ -1476,7 +1561,7 @@ function renderCatalogPreview(){
  const approved=risk.filter(({r})=>catalogReady(r,list));
  const imported=records.filter(({r})=>r.imported).length;
  $('catalogPreviewHeadline').textContent=`${records.length} ürün · ${safe.length} güvenilir · ${risk.length} riskli · ${approved.length} riskli satır onaylandı · ${imported} kaydedildi`;
- $('catalogPreviewHelp').textContent='Riskli satırları alttaki tabloda düzeltip onaylayabilirsiniz. Onay verilemiyorsa nedenini aynı satırda kırmızı açıklama gösterir. Kontrol edilmemiş ürünler kaydedilmez.';
+ $('catalogPreviewHelp').textContent='Riskli satırda gerçek ürün türü eksikse ürün adının altından tür seçin; ardından kaynağı kontrol edip onaylayın. PP/PVC uyuşmazlığı, hatalı fiyat ve stok kodu çakışmaları hâlâ engellenir.';
  $('catalogSafeCount').textContent=`${safe.length} satır`;
  $('catalogRiskCount').textContent=`${risk.length} satır`;
  $('catalogSafePager').innerHTML=catalogPageControls('safe',safe.length);
@@ -1499,7 +1584,7 @@ function editCatalogPreview(index,key,value,inputEl){
   row.priceVerified=false;
   row.issues=(row.issues||[]).filter(i=>!/(fiyat sütunu|fiyat ayrı|fiyat belirsiz)/i.test(i));
  }
- else if(key==='name'){row.nameEdited=true;
+ else if(key==='name'){row.manualProductType='';row.nameEdited=true;
   const cleaned=splitDimensionsAndPackaging(value,row.section);
   row.baseName=cleaned.name;
   const resolved=catalogResolveRowProduct(cleaned.name,row.section);
@@ -1510,7 +1595,7 @@ function editCatalogPreview(index,key,value,inputEl){
   if(cleaned.reason)row.issues.push(cleaned.reason);
  }
  else if(key==='section'){
-  row.section=catalogText(value);
+  row.manualProductType='';row.section=catalogText(value);
   const resolved=catalogResolveRowProduct(row.baseName||row.name,row.section);
   row.name=resolved.name;
   row.issues=(row.issues||[]).filter(i=>!/(Ürün tipi|Ana sistem)/i.test(i));
