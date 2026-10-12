@@ -39,6 +39,25 @@ def init_db():
         con.execute("INSERT OR IGNORE INTO shared_state (id,revision,payload,updated_at) VALUES (1,0,NULL,0)")
 init_db()
 
+# Local rolling safety copies: one JSON snapshot per UTC day with write activity.
+# Stored on the Railway volume, not an independent off-site backup.
+BACKUPS = STORE / "daily-json-backups"
+BACKUPS.mkdir(parents=True, exist_ok=True)
+def save_daily_backup(compact, revision, timestamp):
+    label=time.strftime("%Y-%m-%d",time.gmtime(timestamp))
+    target=BACKUPS / (label+".json")
+    temporary=BACKUPS / ("."+label+".tmp")
+    try:
+        temporary.write_text(compact,encoding="utf-8")
+        os.replace(str(temporary),str(target))
+        dated=sorted(BACKUPS.glob("????-??-??.json"))
+        for obsolete in dated[:-30]:
+            obsolete.unlink(missing_ok=True)
+    except Exception as exc:
+        print("Gunluk JSON kopyasi kaydedilemedi: "+str(exc),flush=True)
+        try: temporary.unlink(missing_ok=True)
+        except OSError: pass
+
 def latest():
     with connect() as con:
         row=con.execute("SELECT revision,payload,updated_at FROM shared_state WHERE id=1").fetchone()
@@ -61,6 +80,7 @@ def commit_state(data, expected):
         con.execute("UPDATE shared_state SET revision=?,payload=?,updated_at=? WHERE id=1 AND revision=?",(new,compact,now,old))
         con.execute("DELETE FROM revisions WHERE revision < ?",(max(0,new-100),))
         con.commit()
+        save_daily_backup(compact,new,now)
         return ("ok",new)
 
 def issue_cookie():
@@ -140,6 +160,20 @@ class Handler(BaseHTTPRequestHandler):
             return self.redirect("/login")
         if path in ("/","/index.html"):return self.html(200,(HERE/"index.html").read_bytes())
         if path=="/api/state":return self.respond(200,latest())
+        if path=="/api/daily-backups":
+            items=[{"file":p.name,"size":p.stat().st_size} for p in sorted(BACKUPS.glob("????-??-??.json"),reverse=True)]
+            return self.respond(200,{"backups":items,"retentionDays":30,"sameVolume":True})
+        if path.startswith("/api/daily-backups/"):
+            name=path.rsplit("/",1)[-1]
+            if len(name)!=15 or not name.endswith(".json") or any(c not in "0123456789-.json" for c in name):
+                return self.respond(400,{"error":"Geçersiz günlük yedek adı"})
+            if not __import__("re").fullmatch(r"\d{4}-\d{2}-\d{2}\.json",name):
+                return self.respond(400,{"error":"Geçersiz günlük yedek adı"})
+            file=BACKUPS/name
+            if not file.is_file():return self.respond(404,{"error":"Yedek bulunamadı"})
+            body=file.read_bytes()
+            self.common(200,"application/json; charset=utf-8",len(body),{"Content-Disposition":'attachment; filename="'+name+'"'})
+            return self.wfile.write(body)
         if path=="/api/previous-state":
             with connect() as con: row=con.execute("SELECT revision,payload FROM revisions ORDER BY revision DESC LIMIT 1").fetchone()
             return self.respond(200,{"data":json.loads(row["payload"]),"revision":row["revision"]}) if row else self.respond(404,{"error":"Önceki kayıt yok"})
