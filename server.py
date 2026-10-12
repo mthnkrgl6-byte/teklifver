@@ -111,13 +111,19 @@ class Handler(BaseHTTPRequestHandler):
         for k,v in (extras or {}).items(): self.send_header(k,v)
         self.end_headers()
     def cookie_opts(self):
-        secured=self.headers.get("X-Forwarded-Proto","").split(",")[0].strip()=="https"
+        secured=(os.environ.get("KALDE_APP_ORIGIN","").startswith("https://") or self.headers.get("X-Forwarded-Proto","").split(",")[0].strip()=="https")
         return "; HttpOnly; Path=/; SameSite=Strict"+("; Secure" if secured else "")
     def is_auth(self): return authorized(self.headers)
     def origin_ok(self):
-        origin=self.headers.get("Origin")
-        if not origin:return True
-        host=self.headers.get("Host","")
+        origin=(self.headers.get("Origin") or "").strip().rstrip("/")
+        if not origin:
+            return True
+        # Railway is a reverse proxy: the internal Host may differ from
+        # the public browser origin. Permit only our explicit HTTPS origin.
+        published_origin=os.environ.get("KALDE_APP_ORIGIN","").strip().rstrip("/")
+        if published_origin:
+            return hmac.compare_digest(origin,published_origin)
+        host=self.headers.get("Host","").strip()
         return origin in ("https://"+host,"http://"+host)
     def do_GET(self):
         path=urlsplit(self.path).path
