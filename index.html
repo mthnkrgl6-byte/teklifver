@@ -1499,6 +1499,7 @@ async function catalogReadPDF(file){
     state.scanned++;
     try{visual=await catalogOCR(page,p,state);}catch(err){state.warnings.push(`Sayfa ${p}: OCR başarısız — ${err.message}`);continue;}
    }
+   if(visual.some(r=>norm(r.text)==='metal grubu'))state.recommendedCategory='Metal';
    if(state.samples.length<16)state.samples.push(...visual.map(r=>`Sayfa ${p}: ${r.text}`).filter(Boolean).slice(0,16-state.samples.length));
    const blocks=charCount<45?[visual]:catalogPdfReadingBlocks(content,page.getViewport({scale:1}).width);
    if(blocks.length>1)state.warnings.push(`Sayfa ${p}: iki bağımsız tablo tespit edildi; sol ve sağ bölümler ayrı okundu.`);
@@ -1873,6 +1874,11 @@ async function importCatalog(){
   else if(['xls','xlsx','csv'].includes(ext))pendingCatalog=await catalogReadSpreadsheet(file);
   else throw new Error('PDF, XLSX, XLS veya CSV dosyası seçin.');
   pendingCatalog.list=list;
+  // Only an explicit catalog page heading may recommend Metal, never filename guesswork.
+  if(pendingCatalog.recommendedCategory==='Metal' && $('importGroup').value!=='Metal'){
+   $('importGroup').value='Metal';
+   pendingCatalog.warnings.push('Kaynak PDF’de “Metal Grubu” başlığı tespit edildi; üst ürün grubu Metal seçildi. Aktarmadan önce kontrol edin.');
+  }
   // Ignore repeated page headings in the same file, dedupe by SKU/name within the import.
   const seen=new Map();pendingCatalog.rows=pendingCatalog.rows.filter(r=>{
    const key=r.code?'c:'+norm(r.code):'n:'+norm(r.name)+'|'+norm(r.section);
