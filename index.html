@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0f2340">
-  <title>Ortak Akıllı Teklif Merkezi 4.1</title>
+  <title>Ortak Akıllı Teklif Merkezi 4.2</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1373,11 +1373,24 @@ function pdfItemFromLine(line,columns,context,page,recognizedHeader,group,family
  if(/^(?:stok|ambalaj|tablo|kampanya|toplam|sira|adet|koli|kod)\b/i.test(norm(name)))return null;
  if(!code&&!resolved.type&&!isProductContext(name)&&!bareCatalogDimension(baseName))return null;
  if(!columns){
+  issues.push('PDF sütunları kesin tanınamadı; başlık, stok kodu, ölçü ve fiyatı kontrol edin');
   if(/\b\d+\s+\d+\s+\d+(?:[.,]\d+)?\s*$/.test(name))issues.push('Tablo sütun başlıkları bulunamadı');
   if(/\s+\d[\d.,]*\s*(?:TL|TRY|₺)\s*$/i.test(raw))issues.push('Fiyat sütunu belirsiz');
  }
  return {code,name,baseName,section:resolved.section,price,priceVerified,size:size||catalogReadableSize(name),unit,packageQty:fields.packageQty,lengthPerPiece:fields.lengthPerPiece,group:detectCatalogGroup(name)||detectCatalogGroup(heading)||detectCatalogGroup(family)||group||'',page,raw,origin:'PDF',issues};
 }
+
+function pdfGenericProductHeading(line){
+ const title=catalogText(line?.text);
+ const n=norm(title);
+ if(!title||title.length<5||title.length>105||findSku(title)||isPriceToken(title)||pdfKey(title)||skipPdfLine(title))return false;
+ if(/^[0-9Øø]/.test(title)||/\b(?:kampanya|gecerlilik|teslimat|iletisim|telefon|sayfa|genel toplam|kdv)\b/.test(n))return false;
+ if(!/\b(?:boru|tesisat|vana|sistem|sistemleri|fittings|kollektor|ek parca|metal|plastik|sulama|radyator|baglanti|sessiz|inflex|koruge|yagmur)\b/.test(n))return false;
+ const letters=title.replace(/[^A-Za-zÇĞİÖŞÜçğıöşü]/g,'');
+ return letters.length>=5&&letters===letters.toLocaleUpperCase('tr-TR') &&
+    (line.items||[]).some(it=>it.height>=11.3);
+}
+
 function catalogParsePdfRows(rows,page,state){
  const parsed=[];
  for(let ri=0;ri<rows.length;ri++){
@@ -1405,7 +1418,7 @@ function catalogParsePdfRows(rows,page,state){
    }
    continue;
   }
-  if(pdfProductHeader(r)){
+  if(pdfProductHeader(r)||pdfGenericProductHeading(r)){
    const nextHeading=cleanedName(r.text);
    const isFamily=catalogFamilyHeading(nextHeading);
    if(isFamily){
