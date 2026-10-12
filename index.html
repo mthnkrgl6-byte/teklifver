@@ -190,8 +190,8 @@
     <p id="catalogStatus" class="catalog-status" role="status" aria-live="polite"></p>
     <div id="catalogPreview" class="catalog-preview hidden">
       <div class="row space" style="align-items:center;margin-bottom:9px"><div><strong id="catalogPreviewHeadline" style="display:block;color:#153952;font-size:15px"></strong><p class="hint" id="catalogPreviewHelp" style="margin:6px 0 0"></p></div><button class="btn outline small" onclick="downloadCatalogPreview()">İsteğe bağlı: Excel indir</button></div>
-      <div class="catalog-review-panel"><div class="catalog-review-heading"><div><h3><span class="catalog-dot safe"></span> Doğrudan aktarılabilir ürünler <span id="catalogSafeCount" class="catalog-count"></span></h3><p>Hata saptanmayan satırlar. İsterseniz aktarılmadan önce burada da düzenleyebilirsiniz.</p></div><div id="catalogSafePager" class="catalog-pager"></div></div>
-      <div class="tablewrap"><table class="catalog-import-table"><thead><tr><th>PDF sayfası</th><th>Stok kodu</th><th>Ürün üst başlığı</th><th>Ürün adı</th><th>Fiyat</th><th>Koli adedi</th><th>Durum</th></tr></thead><tbody id="catalogPreviewRows"></tbody></table></div></div>
+      <div class="catalog-review-panel"><div class="catalog-review-heading"><div><h3><span class="catalog-dot safe"></span> Doğrudan aktarılabilir ürünler <span id="catalogSafeCount" class="catalog-count"></span></h3><p>Hata saptanmayan satırlar. Yanlış olanları Hariç tut ile tek tek eleyebilirsiniz; kaydedilen ürünler Kayıttan sil ile kaldırılır.</p></div><div id="catalogSafePager" class="catalog-pager"></div></div>
+      <div class="tablewrap"><table class="catalog-import-table"><thead><tr><th>PDF sayfası</th><th>Stok kodu</th><th>Ürün üst başlığı</th><th>Ürün adı</th><th>Fiyat</th><th>Koli adedi</th><th>Durum</th><th>İşlem</th></tr></thead><tbody id="catalogPreviewRows"></tbody></table></div></div>
       <div class="catalog-review-panel attention"><div class="catalog-review-heading"><div><h3><span class="catalog-dot risky"></span> Düzenleme gerektiren riskli satırlar <span id="catalogRiskCount" class="catalog-count"></span></h3><p>PDF satırını ve uyarı nedenini kontrol edin. Stok kodu, ürün adı, üst başlık, grup, fiyat ve koli adedini düzeltin. Ardından satırı onaylayın.</p></div><div id="catalogRiskPager" class="catalog-pager"></div></div>
       <div class="tablewrap"><table class="catalog-import-table"><thead><tr><th>Kaynak</th><th>Stok kodu</th><th>Üst başlık / klasör</th><th>Ürün adı</th><th>Grup</th><th>Fiyat</th><th>Koli</th><th>Uyarı / ham satır</th><th>Kontrol</th></tr></thead><tbody id="catalogRiskRows"></tbody></table></div><p class="hint">Onay verdiğiniz ürünler bir sonraki kayıtta eklenir. Fiyatı belirsiz ürünlerde boş bırakılan fiyat 0 TL olarak yorumlanmaz. İsterseniz hatalı satırı <b>Hariç tut</b> olarak işaretleyebilirsiniz.</p></div>
       <p class="hint" id="catalogEmptyHint" style="color:#a46421;margin:13px 0"></p>
@@ -482,17 +482,23 @@ function delProduct(id){if(confirm('Ürünü silmek istiyor musunuz?')){db.produ
 function renderProducts(){
  const search=norm($('productSearch').value);
  // Group by PDF section within its originating price list. Do not render a flat 500-row table.
- const matches=db.products.filter(p=>norm([p.code,p.name,p.list,p.section,db.groups.find(g=>g.id===p.groupId)?.name||''].join(' ')).includes(search));
- const folders=new Map();
- for(const p of matches){
-  const section=(p.section||p.list||'Diğer ürünler').trim();
-  const key=norm(p.list||'')+'|'+norm(section);
-  if(!folders.has(key))folders.set(key,{section,list:p.list||'',products:[]});
-  folders.get(key).products.push(p);
+ const firstListPosition=new Map();
+ db.products.forEach((p,i)=>{const k=p.list||'';if(!firstListPosition.has(k))firstListPosition.set(k,i)});
+ const matches=db.products.map((p,i)=>({p,i})).filter(({p})=>norm([p.code,p.name,p.list,p.section,db.groups.find(g=>g.id===p.groupId)?.name||''].join(' ')).includes(search));
+ // PDF/Excel source order, NOT alphabetical headings/products.
+ matches.sort((a,b)=>(firstListPosition.get(a.p.list||'')-firstListPosition.get(b.p.list||''))||
+   ((Number.isFinite(Number(a.p.sourceOrder))&&a.p.sourceOrder!==undefined&&
+      Number.isFinite(Number(b.p.sourceOrder))&&b.p.sourceOrder!==undefined)?
+       Number(a.p.sourceOrder)-Number(b.p.sourceOrder):0)||(a.i-b.i));
+ const out=[];
+ for(const {p} of matches){
+  const section=(p.section||p.list||'Diğer ürünler').trim(),list=p.list||'';
+  const key=norm(list)+'|'+norm(section);
+  if(!out.length||out[out.length-1].key!==key)out.push({key,section,list,products:[]});
+  out[out.length-1].products.push(p);
  }
- const out=[...folders.values()].sort((a,b)=>a.section.localeCompare(b.section,'tr'));
  $('productFolders').innerHTML=out.map(folder=>{
-  const rows=folder.products.sort((a,b)=>(a.name||'').localeCompare(b.name||'','tr')).map(p=>`<tr><td>${esc(p.code)}</td><td><b>${esc(p.name)}</b></td><td>${esc(p.category||'Eski kayıt')}</td><td>${p.price===null||p.price===undefined?'<span class="pill warn">Fiyat girilmedi</span>':money(p.price)}</td><td>${esc(p.unit)}</td><td><button type="button" class="btn secondary small" onclick="editProduct('${esc(p.id)}')">Düzenle</button> <button type="button" class="btn red small" onclick="delProduct('${esc(p.id)}')">Sil</button></td></tr>`).join('');
+  const rows=folder.products.map(p=>`<tr><td>${esc(p.code)}</td><td><b>${esc(p.name)}</b></td><td>${esc(p.category||'Eski kayıt')}</td><td>${p.price===null||p.price===undefined?'<span class="pill warn">Fiyat girilmedi</span>':money(p.price)}</td><td>${esc(p.unit)}</td><td><button type="button" class="btn secondary small" onclick="editProduct('${esc(p.id)}')">Düzenle</button> <button type="button" class="btn red small" onclick="delProduct('${esc(p.id)}')">Sil</button></td></tr>`).join('');
   const priced=folder.products.filter(p=>p.price!==null&&p.price!==undefined).length;
   return `<details class="catalog-folder" ${search?'open':''}><summary><div class="catalog-folder-main"><span class="catalog-folder-arrow" aria-hidden="true">▶</span><div><span class="catalog-folder-title">${esc(folder.section)}</span><span class="catalog-folder-source">${esc(folder.list)}</span></div></div><div class="catalog-folder-stats"><span class="pill">${folder.products.length} ürün</span>${priced<folder.products.length?`<span class="pill warn">${folder.products.length-priced} fiyatsız</span>`:''}</div></summary><div class="catalog-folder-body"><div class="tablewrap"><table><thead><tr><th>Stok kodu</th><th>Ürün adı</th><th>Üst kategori</th><th>Liste fiyatı</th><th>Birim</th><th>İşlem</th></tr></thead><tbody>${rows}</tbody></table></div></div></details>`;
  }).join('')||'<p class="empty">Aramanızla eşleşen ürün bulunamadı. Önce katalog yükleyin veya aramayı temizleyin.</p>';
@@ -1380,7 +1386,7 @@ function catalogParsePdfRows(rows,page,state){
   }
   if(detectedGroup&&(!state.group||catalogFamilyHeading(r.text)))state.group=detectedGroup;
   const item=pdfItemFromLine(r,state.columns,state.context,page,false,state.group,state.family||'');
-  if(item)parsed.push(item);
+  if(item){item.sourceRow=ri;item.sourceOrder=state.rows.length+parsed.length;parsed.push(item);}
  }
  return parsed;
 }
@@ -1447,7 +1453,7 @@ function catalogRowsFromSheet(sheet,sheetName){
   const baseName=cleanCatalogProductName(name,price);
   const resolved=catalogResolveRowProduct(baseName,heading,catalogFamilyHeading(heading)?heading:'');
   issues.push(...resolved.issues);
-  results.push({code,name:resolved.name,baseName,section:resolved.section,price,priceVerified:true,unit:normalizeUnit(cell.unit),packageQty:cleaned.packageQty,lengthPerPiece:cleaned.lengthPerPiece,group:detectCatalogGroup(baseName)||detectCatalogGroup(heading),page:sheetName,raw:vals.join(' | '),origin:'Excel',issues});
+  results.push({code,name:resolved.name,baseName,section:resolved.section,price,priceVerified:true,sourceRow:rows.indexOf(raw),unit:normalizeUnit(cell.unit),packageQty:cleaned.packageQty,lengthPerPiece:cleaned.lengthPerPiece,group:detectCatalogGroup(baseName)||detectCatalogGroup(heading),page:sheetName,raw:vals.join(' | '),origin:'Excel',issues});
  }
  return {results,skipped,headerFound:!!columns};
 }
@@ -1613,7 +1619,7 @@ function catalogRowHtml(row,index,isRisk){
  const basic=`<td>${esc(row.page)}</td><td>${catalogField(index,'code',row.code,`Stok kodu ${index+1}`,false,disabled)}</td><td>${catalogField(index,'section',row.section||pendingCatalog.list,`Üst başlık ${index+1}`,true,disabled)}</td><td>${catalogField(index,'name',row.name,`Ürün adı ${index+1}`,true,disabled)}${isRisk?catalogTypeControls(row,index,disabled):''}</td>`;
  const price=`${catalogField(index,'price',row.price===null?'':row.price,`Fiyat ${index+1}`,false,disabled)}`;
  const packageCell=catalogField(index,'packageQty',row.packageQty||'',`Koli adedi ${index+1}`,false,disabled);
- if(!isRisk)return `<tr class="${disabled?'catalog-imported':''}">${basic}<td>${price}</td><td>${packageCell}</td><td>${title}</td></tr>`;
+ if(!isRisk)return `<tr data-catalog-row="${index}" class="${disabled?'catalog-imported':''}">${basic}<td>${price}</td><td>${packageCell}</td><td>${title}</td><td><button class="btn ${row.excluded?'secondary':'red'} small" type="button" onclick="catalogExcludeOrDelete(${index})">${row.imported?'Kayıttan sil':row.excluded?'Tekrar dahil et':'Hariç tut'}</button></td></tr>`;
  const selectedCategory=$('importGroup').value;const options=`<option value="${esc(groupIdForCategory(selectedCategory))}">${esc(selectedCategory)}</option>`;
  const group=`<span class="pill" title="Katalog yüklerken seçilen ortak ürün grubu">${esc(selectedCategory)}</span>`;
  const reviewed=!!row.reviewApproved;
@@ -1664,12 +1670,12 @@ function renderCatalogPreview(){
  const approved=risk.filter(({r})=>catalogReady(r,list));
  const imported=records.filter(({r})=>r.imported).length;
  $('catalogPreviewHeadline').textContent=`${records.length} ürün · ${safe.length} güvenilir · ${risk.length} riskli · ${approved.length} riskli satır onaylandı · ${imported} kaydedildi`;
- $('catalogPreviewHelp').textContent='Riskli satırda gerçek ürün türü eksikse ürün adının altından tür seçin; ardından kaynağı kontrol edip onaylayın. PP/PVC uyuşmazlığı, hatalı fiyat ve stok kodu çakışmaları hâlâ engellenir.';
+ $('catalogPreviewHelp').textContent='Kaynak sırası korunur. Hatalı gördüğünüz doğrudan aktarılabilir satırı da Hariç tut ile çıkarabilir; daha önce kaydettiğiniz ürünü Kayıttan sil ile ortak katalogdan silebilirsiniz. Riskli satırlarda ürün türü, kod ve fiyatı doğrulayın.';
  $('catalogSafeCount').textContent=`${safe.length} satır`;
  $('catalogRiskCount').textContent=`${risk.length} satır`;
  $('catalogSafePager').innerHTML=catalogPageControls('safe',safe.length);
  $('catalogRiskPager').innerHTML=catalogPageControls('risky',risk.length);
- $('catalogPreviewRows').innerHTML=safe.slice(catalogPages.safe*CATALOG_PREVIEW_LIMIT,(catalogPages.safe+1)*CATALOG_PREVIEW_LIMIT).map(({r,idx})=>catalogRowHtml(r,idx,false)).join('')||'<tr><td class="empty" colspan="7">Doğrudan aktarılabilir ürün bulunamadı.</td></tr>';
+ $('catalogPreviewRows').innerHTML=safe.slice(catalogPages.safe*CATALOG_PREVIEW_LIMIT,(catalogPages.safe+1)*CATALOG_PREVIEW_LIMIT).map(({r,idx})=>catalogRowHtml(r,idx,false)).join('')||'<tr><td class="empty" colspan="8">Doğrudan aktarılabilir ürün bulunamadı.</td></tr>';
  $('catalogRiskRows').innerHTML=risk.slice(catalogPages.risky*CATALOG_PREVIEW_LIMIT,(catalogPages.risky+1)*CATALOG_PREVIEW_LIMIT).map(({r,idx})=>catalogRowHtml(r,idx,true)).join('')||'<tr><td class="empty" colspan="9">Riskli satır bulunmuyor.</td></tr>';
  $('catalogWarnings').textContent=pendingCatalog.warnings.map(x=>'• '+x).join('\n')||'Uyarı yok.';
  $('catalogRawSample').textContent=pendingCatalog.samples.slice(0,10).join('\n');
@@ -1727,6 +1733,30 @@ function approveCatalogRiskRow(index,approved){
  catalogRefreshOneRow(index);catalogRefreshCounts();
  catalogPreviewStatus(`Satır ${index+1} onaylandı. Ürün henüz kaydedilmedi; aktarım düğmesini kullanın.`,'ok');
 }
+
+// v4.2 — Remove a row from the safe preview, or remove the exact saved SKU
+// after confirmation. Never delete unrelated records.
+async function catalogExcludeOrDelete(index){
+ const row=pendingCatalog?.rows?.[index];if(!row)return;
+ if(!row.imported){
+  row.excluded=!row.excluded;row.reviewApproved=false;
+  row.reviewMessage=row.excluded?'Aktarımdan çıkarıldı.':'Satır yeniden dahil edildi.';
+  row.reviewMessageState='';
+  renderCatalogPreview();return;
+ }
+ const id=row.importedProductId;
+ if(!id)return alert('Kaydedilmiş ürün kimliği bulunamadı. Ürün kataloğundaki Sil seçeneğini kullanın.');
+ const found=db.products.find(p=>p.id===id&&p.list===pendingCatalog.list);
+ if(!found)return alert('Ürün ortak katalogda artık bulunmuyor.');
+ if(!confirm('Bu ürün ortak katalogdan silinecek:\n'+found.name+'\nStok kodu: '+(found.code||'—')+'\nDevam edilsin mi?'))return;
+ const previous=db.products;
+ db.products=previous.filter(p=>p.id!==id);
+ if(!await persist()){db.products=previous;renderAll();return alert('Silme sunucuya kaydedilemedi; ürün korunuyor.');}
+ row.imported=false;row.excluded=true;row.reviewApproved=false;row.deletedAfterImport=true;
+ renderCatalogPreview();renderAll();
+ catalogPreviewStatus('Ürün ortak katalogdan silindi; önizlemede hariç tutuldu.','ok');
+}
+
 function excludeCatalogRiskRow(index){
  const row=pendingCatalog?.rows?.[index];if(!row||row.imported)return;
  row.excluded=!row.excluded;row.reviewApproved=false;
@@ -1762,7 +1792,7 @@ async function importCatalog(){
    }else seen.set(key,r);
    return true;
   });
-  pendingCatalog.rows.forEach(r=>{r.initialRisk=!!catalogRowSafety(r,list).length;r.initialIssues=[...(r.issues||[])];r.reviewApproved=false;r.excluded=false;r.imported=false;});
+  pendingCatalog.rows.forEach((r,i)=>{if(r.sourceOrder===undefined)r.sourceOrder=i;r.initialRisk=!!catalogRowSafety(r,list).length;r.initialIssues=[...(r.issues||[])];r.reviewApproved=false;r.excluded=false;r.imported=false;});
   catalogPages.safe=0;catalogPages.risky=0;
   renderCatalogPreview();
   catalogPreviewStatus(pendingCatalog.rows.length?`Dosya okundu. ${pendingCatalog.rows.length} ürün önizlemede hazır; henüz kataloğa kaydedilmedi.`:'Dosya okundu ancak ürün satırı tanınamadı. Ham satır örneklerini ve uyarıları inceleyin.',pendingCatalog.rows.length?'ok':'warn');
@@ -1789,9 +1819,9 @@ async function confirmCatalogImport(){
   const name=catalogText(r.name);
   const prior=temp.find(p=>p.list===list&&(code?p.code===code:norm(p.name)===norm(name)));
   if(prior&&!allowUpdate){skipped++;continue;}
-  const data={id:prior?.id||uid(),name,code,section,price:r.price===null?(prior?.price??null):r.price,list,category,groupId:groupIdForCategory(category),unit:r.unit||'adet',packageQty:r.packageQty||'',lengthPerPiece:r.lengthPerPiece||''};
+  const data={id:prior?.id||uid(),name,code,section,price:r.price===null?(prior?.price??null):r.price,list,category,groupId:groupIdForCategory(category),unit:r.unit||'adet',packageQty:r.packageQty||'',lengthPerPiece:r.lengthPerPiece||'',sourceOrder:prior?.sourceOrder??r.sourceOrder??pendingCatalog.rows.indexOf(r),sourcePage:r.page??prior?.sourcePage??''};
   if(prior){Object.assign(prior,data);changed++;}else{temp.push(data);newCount++;}
-  actuallySaved.push(r);
+  actuallySaved.push({row:r,productId:data.id});
  }
  if(!newCount&&!changed)return catalogPreviewStatus('Yeni ürün yok; mevcut kayıtlar korunuyor. Mevcut ürünleri değiştirmek isterseniz “Mevcut ürün ve fiyatlarını güncelle” seçeneğini açın.','warn');
  if(changed&&!confirm(`${changed} mevcut ürün güncellenecek. Ürün/fiyatları orijinal listeden doğruladınız mı?`))return;
@@ -1799,7 +1829,7 @@ async function confirmCatalogImport(){
  if(!await persist()){
   db.products=previous;renderAll();return catalogPreviewStatus('Kaydedilemedi; hiçbir ürün değiştirilmedi. Yerel sunucu ile açın.','error');
  }
- for(const row of actuallySaved)row.imported=true;
+ for(const {row,productId} of actuallySaved){row.imported=true;row.importedProductId=productId;}
  renderCatalogPreview();
  catalogPreviewStatus(`${newCount} yeni ürün ve ${changed} güncelleme kaydedildi. ${unfinished} incelenmemiş satır önizlemede kaldı; düzelterek sonradan aktarabilirsiniz. ${skipped} mevcut ürün korunmuştur.`,'ok');
 }
