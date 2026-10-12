@@ -117,7 +117,7 @@
 .dictionary-interpreted{margin-top:7px;padding:7px 8px;background:#fff3e3;border-left:3px solid #f28c28;border-radius:5px;font-size:11px;line-height:1.5;color:#784b15;overflow-wrap:anywhere}
 
 .catalog-import-table .catalog-size-cell{font-weight:800;color:#183653;white-space:nowrap;min-width:72px}
-.safety-card{background:#fff9f0;border:1px solid #efd4b4;border-radius:12px;padding:15px;margin-bottom:16px}.safety-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:8px;margin:12px 0}.safety-metric{background:#fff;border:1px solid #f1ddc4;border-radius:8px;padding:8px;display:flex;flex-direction:column}.safety-metric b{font-size:19px;color:#163a55}.safety-metric small{font-size:11px;color:#86684b}.safety-card details{margin:10px 0}.safety-card summary{cursor:pointer}.safety-warning{background:#fff0dc;color:#925415;padding:9px;border-radius:6px}.safety-history{border:1px solid #d2e0e8;border-radius:12px;padding:15px;margin:16px 0;background:#fff}.safety-history summary{cursor:pointer}</style>
+.safety-card{background:#fff9f0;border:1px solid #efd4b4;border-radius:12px;padding:15px;margin-bottom:16px}.safety-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:8px;margin:12px 0}.safety-metric{background:#fff;border:1px solid #f1ddc4;border-radius:8px;padding:8px;display:flex;flex-direction:column}.safety-metric b{font-size:19px;color:#163a55}.safety-metric small{font-size:11px;color:#86684b}.safety-card details{margin:10px 0}.safety-card summary{cursor:pointer}.safety-warning{background:#fff0dc;color:#925415;padding:9px;border-radius:6px}.safety-history{border:1px solid #d2e0e8;border-radius:12px;padding:15px;margin:16px 0;background:#fff}.safety-history summary{cursor:pointer}.safety-version{margin:9px 0;border-bottom:1px solid #e4ebef;padding:7px 0}.safety-version summary{cursor:pointer}</style>
 </head>
 <body>
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
@@ -245,6 +245,10 @@
 
 <section id="settings" class="tab hidden"><div class="page-head"><div><span class="eyebrow">SİSTEM YÖNETİMİ</span><h1>Ayarlar ve Yedekleme</h1><p class="sub">Ürün kataloğunuzu, eşleştirme kurallarınızı ve teklif geçmişinizi koruyun.</p></div></div>
   <div class="panel"><div class="panel-header"><div class="panel-title-row"><span class="serial"><svg class="ic small"><use href="#ico-shield"/></svg></span><div><h2>Veri yedekleme</h2><p>Ürün, grup, sözlük ve teklifler ortak sunucuda tutulur. JSON dosyasıyla mevcut kayıtlarınızı da aktarabilirsiniz.</p></div></div></div><div class="row"><button class="btn" onclick="backup()"><svg class="ic"><use href="#ico-download"/></svg> Tüm verileri indir (JSON)</button><div class="field" style="max-width:270px"><label for="restoreFile">Yedek dosyasından geri yükle</label><input id="restoreFile" type="file" accept=".json" onchange="restoreData(event)"></div></div><p class="hint">Ortak sunucu kullanıldığında kayıtlar sunucu veritabanındadır. Şirket verilerini ayrıca JSON olarak yedekleyin. Önceki cihazınızın kayıtlarını aktaracaksanız mevcut verilerin yedeğini alın ve JSON geri yükleme alanını kullanın.</p><div class="row" style="margin-top:14px"><button class="btn secondary" type="button" onclick="restorePreviousServerBackup()">Sunucudaki önceki kaydı incele / geri yükle</button><span class="hint">Yalnızca yerel sunucuda önceki kayıt yedeği varsa çalışır.</span></div></div>
+  <div class="panel"><div class="panel-header"><div class="panel-title-row"><span class="serial">02</span><div><h2>Günlük geri dönüş kopyaları</h2><p>Ortak sunucuda veri değişikliği olduğunda son 30 günün JSON dosyaları aynı kalıcı diskte saklanır.</p></div></div></div>
+   <div class="row" style="align-items:center;flex-wrap:wrap;gap:10px"><button type="button" class="btn secondary" onclick="loadDailyBackups()">Günlük kopyaları listele</button><select id="dailyBackupSelect" aria-label="Günlük yedek seç" style="min-width:180px"><option value="">Henüz listelenmedi</option></select><button type="button" class="btn" onclick="downloadDailyBackup()">Seçilen JSON'u indir</button></div>
+   <p id="dailyBackupStatus" class="hint">Bu kopyalar aynı sunucu diskindedir. Sunucu diskinden bağımsız koruma için düzenli olarak JSON indirip ayrı bir yerde saklayın. Geri yüklemek için yukarıdaki JSON geri yükleme alanını kullanın.</p>
+  </div>
   <div class="setting-note"><strong>Bu sürüm hakkında</strong><p style="margin:8px 0 0">Bu sürüm tek bir tarayıcıda çalışan bir prototiptir; ortak sunucu, kullanıcı hesapları veya çevrimiçi yapay zekâ servisi içermez. Excel/PDF/OCR kitaplıkları için internet gerekir. Fiyat, iskonto ve eşleştirmeler ticari kullanım öncesinde doğrulanmalıdır.</p></div>
 </section>
 <div class="footer">Akıllı Teklif Merkezi · Şifreli ortak çalışma · Ürün, fiyat ve teklifler ortak veritabanına kaydedilir.</div>
@@ -515,8 +519,29 @@ function renderCatalogHistory(){
  const ver=$('catalogVersionHistory'),hist=$('catalogChangeHistory');
  if(!ver||!hist)return;
  const m=safetyMeta();
- ver.innerHTML=m.catalogVersions.length?'<div class="tablewrap"><table><thead><tr><th>Zaman</th><th>Liste</th><th>Kaynak</th><th>Yeni/değişen</th></tr></thead><tbody>'+m.catalogVersions.slice(0,30).map(v=>'<tr><td>'+esc(v.time.slice(0,16).replace('T',' '))+'</td><td>'+esc(v.list)+'</td><td>'+esc(v.sourceFile)+'</td><td>'+v.newCount+' / '+v.changed+'</td></tr>').join('')+'</tbody></table></div>':'<p class="hint">Henüz katalog sürümü kaydedilmedi.</p>';
+ ver.innerHTML=m.catalogVersions.length?m.catalogVersions.slice(0,30).map(v=>{
+  const detail=(v.priceDifferences||[]).map(d=>'<tr><td>'+esc(d.code)+'</td><td>'+esc(d.name)+'</td><td>'+(d.before??'—')+'</td><td>'+(d.after??'—')+'</td><td>'+(d.delta==null?'—':d.delta.toFixed(1)+'%')+'</td></tr>').join('');
+  return '<details class="safety-version"><summary>'+esc(v.time.slice(0,16).replace('T',' '))+' · '+esc(v.list)+' · '+v.newCount+' yeni / '+v.changed+' güncellendi</summary><p class="hint">Kaynak: '+esc(v.sourceFile)+'</p>'+(detail?'<div class="tablewrap"><table><thead><tr><th>Kod</th><th>Ürün</th><th>Eski</th><th>Yeni</th><th>Fark</th></tr></thead><tbody>'+detail+'</tbody></table></div>':'<p class="hint">Fiyat değişikliği yok veya kayıt korunmuş.</p>')+'</details>';
+ }).join(''):'<p class="hint">Henüz katalog sürümü kaydedilmedi.</p>';
  hist.innerHTML=m.changeHistory.length?'<div class="tablewrap"><table><thead><tr><th>Zaman</th><th>İşlem</th><th>Açıklama</th></tr></thead><tbody>'+m.changeHistory.slice(0,30).map(v=>'<tr><td>'+esc(v.time.slice(0,16).replace('T',' '))+'</td><td>'+esc(v.action)+'</td><td>'+esc(v.description)+'</td></tr>').join('')+'</tbody></table></div>':'<p class="hint">Henüz işlem kaydı bulunmuyor.</p>';
+}
+
+
+async function loadDailyBackups(){
+ const status=$('dailyBackupStatus'),select=$('dailyBackupSelect');
+ try{
+  const response=await fetch('/api/daily-backups',{cache:'no-store'});
+  if(!response.ok)throw Error('Günlük kopyalar alınamadı (HTTP '+response.status+')');
+  const data=await response.json();
+  select.innerHTML='<option value="">Yedek seçin</option>'+(data.backups||[]).map(b=>'<option value="'+esc(b.file)+'">'+esc(b.file)+' · '+Math.round((b.size||0)/1024)+' KB</option>').join('');
+  status.textContent=(data.backups||[]).length+' geri dönüş kopyası listelendi. Kopyalar aynı diskte tutulur; harici yedek yerine geçmez.';
+ }catch(err){status.textContent=err.message;}
+}
+function downloadDailyBackup(){
+ const name=$('dailyBackupSelect')?.value;
+ if(!name)return alert('Önce listeden bir günlük kopya seçin.');
+ if(!/^\d{4}-\d{2}-\d{2}\.json$/.test(name))return alert('Geçersiz yedek adı.');
+ location.href='/api/daily-backups/'+name;
 }
 
 function renderAll(){
