@@ -1119,6 +1119,31 @@ function catalogFamilyDisplay(raw){
  if(/\b(?:pp|ppr|pprc)\b/.test(t))return 'PP Boru';
  return 'Boru';
 }
+
+/* v4.3 — metal fittings and valve catalogs:
+   a size cell such as 1/2" is NOT the product name.
+   A visually prominent section header supplies the exact product family.
+   Keep PN/TS/named variants in the identity, never synthesize a price. */
+function catalogMetalHeadingText(text){
+ const title=catalogText(text),t=norm(title);
+ if(!title||title.length>132||/\b(?:metal grubu|urun grubu|fiyat listesi|ambalaj miktari|malzeme kodu)\b/.test(t))return false;
+ if(!/\b(?:vana|vanasi|vanali|kuresel|musluk|kollektor|rakor|rekor|regulator|dirsek|tapa|kortapa|koretapa|hortum|fleks|flex|cekvalf|reduction|reduksiyon|nip[e]?l|adapt[o]?r|baglanti|termokupul|kombi|suzgec|filtre)\b/.test(t))return false;
+ return true;
+}
+function catalogMetalSizeCell(raw){
+ const t=catalogText(raw).replace(/[”“″]/g,'"').trim();
+ // Threads (1/2, 3/4, 1 1/4, 2 1/2), optionally followed by an outlet diameter.
+ return /^(?:\d{1,2}(?:\s+\d{1,2}\/\d{1,2})?|\d{1,2}\/\d{1,2})\s*"?\s*(?:\/\s*\d{1,4}\s*[x×X]\s*\d+(?:[.,]\d+)?)?$/i.test(t) ||
+        /^(?:DN\s*|Ø\s*)\d{1,4}(?:\s*[x×X]\s*\d{1,4})?$/i.test(t);
+}
+function catalogMetalHeader(line){
+ const title=catalogText(line?.text);
+ if(!catalogMetalHeadingText(title)||findSku(title)||pdfKey(title)||skipPdfLine(title)||isPriceToken(title))return false;
+ if(/^[\dØø]/.test(title))return false;
+ // A separate bold section title in the original PDF, not a table value.
+ return (line.items||[]).length<=5&&(line.items||[]).some(it=>it.height>=10.0);
+}
+
 function catalogResolveRowProduct(raw,heading='',family=''){
  const base=catalogText(raw),h=catalogText(heading),f=catalogText(family);
  const explicitType=catalogSpecificType(base);
@@ -1127,6 +1152,7 @@ function catalogResolveRowProduct(raw,heading='',family=''){
  const issues=[];
  const sourceFamily=f||((catalogFamilyHeading(h))?h:'');
  const onlySize=bareCatalogDimension(base)||/^\d{2,4}\s+\d{2,4}$/.test(base);
+ const metalSize=catalogMetalSizeCell(base)&&catalogMetalHeadingText(h);
  // A family title cannot dictate that every diameter is a pipe.
  if(!type&&catalogPipeLengthDimension(base))type='Boru';
  if(!type&&onlySize)issues.push('Ürün tipi belirsiz: PDF alt başlığı (boru / dirsek / çatal / manşon) tanınamadı');
@@ -1137,7 +1163,11 @@ function catalogResolveRowProduct(raw,heading='',family=''){
  }
  const containsOwnType=!!explicitType;
  let name=base;
- if(!containsOwnType&&onlySize&&type){
+ if(!containsOwnType&&metalSize){
+  // Exact metal subtype and standard from the source heading stay attached
+  // to each SKU (PN10 / PN25, kilitli / düz vana, rakorlu / düz).
+  name=catalogText(base+' '+h);
+ }else if(!containsOwnType&&onlySize&&type){
   const genericPipe=type==='Boru'&&/^(?:boru|borular|pipe)$/.test(norm(h));
   const typeName=headingType===type&&!catalogFamilyHeading(h)&&!genericPipe ? prettyCatalogTitle(h) : (type==='Boru'&&sourceFamily?catalogFamilyDisplay(sourceFamily):type);
   name=catalogText(base+' '+typeName);
@@ -1226,6 +1256,8 @@ const skipPdfLine = t => {
 // Measured dimensions remain separate from carton quantities and prices.
 function catalogReadableSize(value){
  const text=catalogText(value||'');
+ const thread=text.match(/(?:^|\s)(\d{1,2}\s+\d{1,2}\/\d{1,2}|\d{1,2}\/\d{1,2})(?=\s*["”“″]|\s|$)/);
+ if(thread)return thread[1].replace(/\s+/g,' ');
  const pair=text.match(/(?:^|\s|Ø)\s*(\d{1,5})\s*[x×X]\s*(\d{1,5})(?=\s|$|[.,;])/);
  if(pair)return pair[1]+'x'+pair[2];
  const single=text.match(/(?:^|\s)(?:Ø\s*|DN\s*)?(\d{2,4})(?:\s*mm)?(?=\s|$)/i);
@@ -1418,7 +1450,7 @@ function catalogParsePdfRows(rows,page,state){
    }
    continue;
   }
-  if(pdfProductHeader(r)||pdfGenericProductHeading(r)){
+  if(pdfProductHeader(r)||catalogMetalHeader(r)||pdfGenericProductHeading(r)){
    const nextHeading=cleanedName(r.text);
    const isFamily=catalogFamilyHeading(nextHeading);
    if(isFamily){
