@@ -115,6 +115,8 @@
 
 /* v4.0 — müşteri ifadesinden ürün karşılığına dönüşüm */
 .dictionary-interpreted{margin-top:7px;padding:7px 8px;background:#fff3e3;border-left:3px solid #f28c28;border-radius:5px;font-size:11px;line-height:1.5;color:#784b15;overflow-wrap:anywhere}
+
+.catalog-import-table .catalog-size-cell{font-weight:800;color:#183653;white-space:nowrap;min-width:72px}
 </style>
 </head>
 <body>
@@ -190,10 +192,10 @@
     <p id="catalogStatus" class="catalog-status" role="status" aria-live="polite"></p>
     <div id="catalogPreview" class="catalog-preview hidden">
       <div class="row space" style="align-items:center;margin-bottom:9px"><div><strong id="catalogPreviewHeadline" style="display:block;color:#153952;font-size:15px"></strong><p class="hint" id="catalogPreviewHelp" style="margin:6px 0 0"></p></div><button class="btn outline small" onclick="downloadCatalogPreview()">İsteğe bağlı: Excel indir</button></div>
-      <div class="catalog-review-panel"><div class="catalog-review-heading"><div><h3><span class="catalog-dot safe"></span> Doğrudan aktarılabilir ürünler <span id="catalogSafeCount" class="catalog-count"></span></h3><p>Hata saptanmayan satırlar. Yanlış olanları Hariç tut ile tek tek eleyebilirsiniz; kaydedilen ürünler Kayıttan sil ile kaldırılır.</p></div><div id="catalogSafePager" class="catalog-pager"></div></div>
-      <div class="tablewrap"><table class="catalog-import-table"><thead><tr><th>PDF sayfası</th><th>Stok kodu</th><th>Ürün üst başlığı</th><th>Ürün adı</th><th>Fiyat</th><th>Koli adedi</th><th>Durum</th><th>İşlem</th></tr></thead><tbody id="catalogPreviewRows"></tbody></table></div></div>
+      <div class="catalog-review-panel"><div class="catalog-review-heading"><div><h3><span class="catalog-dot safe"></span> Doğrudan aktarılabilir ürünler <span id="catalogSafeCount" class="catalog-count"></span></h3><p>Kaynak PDF / Excel sırası korunur. Ölçü ayrı sütunda gösterilir; düzeltmek için ürün adını düzenleyin. Yanlış olanları Hariç tut ile eleyin; kaydedilen ürünler Kayıttan sil ile kaldırılır.</p></div><div id="catalogSafePager" class="catalog-pager"></div></div>
+      <div class="tablewrap"><table class="catalog-import-table"><thead><tr><th>PDF sayfası</th><th>Stok kodu</th><th>Ürün üst başlığı</th><th>Ürün adı</th><th>Ölçü</th><th>Fiyat</th><th>Koli adedi</th><th>Durum</th><th>İşlem</th></tr></thead><tbody id="catalogPreviewRows"></tbody></table></div></div>
       <div class="catalog-review-panel attention"><div class="catalog-review-heading"><div><h3><span class="catalog-dot risky"></span> Düzenleme gerektiren riskli satırlar <span id="catalogRiskCount" class="catalog-count"></span></h3><p>PDF satırını ve uyarı nedenini kontrol edin. Stok kodu, ürün adı, üst başlık, grup, fiyat ve koli adedini düzeltin. Ardından satırı onaylayın.</p></div><div id="catalogRiskPager" class="catalog-pager"></div></div>
-      <div class="tablewrap"><table class="catalog-import-table"><thead><tr><th>Kaynak</th><th>Stok kodu</th><th>Üst başlık / klasör</th><th>Ürün adı</th><th>Grup</th><th>Fiyat</th><th>Koli</th><th>Uyarı / ham satır</th><th>Kontrol</th></tr></thead><tbody id="catalogRiskRows"></tbody></table></div><p class="hint">Onay verdiğiniz ürünler bir sonraki kayıtta eklenir. Fiyatı belirsiz ürünlerde boş bırakılan fiyat 0 TL olarak yorumlanmaz. İsterseniz hatalı satırı <b>Hariç tut</b> olarak işaretleyebilirsiniz.</p></div>
+      <div class="tablewrap"><table class="catalog-import-table"><thead><tr><th>Kaynak</th><th>Stok kodu</th><th>Üst başlık / klasör</th><th>Ürün adı</th><th>Ölçü</th><th>Grup</th><th>Fiyat</th><th>Koli</th><th>Uyarı / ham satır</th><th>Kontrol</th></tr></thead><tbody id="catalogRiskRows"></tbody></table></div><p class="hint">Onay verdiğiniz ürünler bir sonraki kayıtta eklenir. Fiyatı belirsiz ürünlerde boş bırakılan fiyat 0 TL olarak yorumlanmaz. İsterseniz hatalı satırı <b>Hariç tut</b> olarak işaretleyebilirsiniz.</p></div>
       <p class="hint" id="catalogEmptyHint" style="color:#a46421;margin:13px 0"></p>
       <details style="margin:14px 0"><summary style="cursor:pointer;font-size:12px;font-weight:800">Okuma uyarıları ve ham PDF örnekleri</summary><pre id="catalogWarnings" class="catalog-debug"></pre><pre id="catalogRawSample" class="catalog-debug"></pre></details>
       <div class="row space" style="flex-wrap:wrap;align-items:center"><div><label class="catalog-checkbox"><input id="allowMissingPrice" type="checkbox" checked onchange="renderCatalogPreview()"> Fiyat sütunu olmayan ürünleri “Fiyat girilmedi” olarak ekle (fiyat 0 TL olmaz)</label><label class="catalog-checkbox" style="margin-top:8px"><input id="allowExistingUpdates" type="checkbox"> Mevcut ürün ve fiyatlarını güncelle (varsayılan: kapalı)</label><p class="hint" style="margin:9px 0 0">Riskli satırları alt tabloda düzenleyip onaylayabilirsiniz. Onaysız satırlar kaydedilmez. Excel kontrolü zorunlu değildir; fiyatları mutlaka kaynağından doğrulayın.</p></div><button id="catalogImportConfirm" class="btn" onclick="confirmCatalogImport()">Hazır ve onaylı ürünleri kataloğa aktar</button></div>
@@ -1661,12 +1663,12 @@ function catalogRowHtml(row,index,isRisk){
  const basic=`<td>${esc(row.page)}</td><td>${catalogField(index,'code',row.code,`Stok kodu ${index+1}`,false,disabled)}</td><td>${catalogField(index,'section',row.section||pendingCatalog.list,`Üst başlık ${index+1}`,true,disabled)}</td><td>${catalogField(index,'name',row.name,`Ürün adı ${index+1}`,true,disabled)}${isRisk?catalogTypeControls(row,index,disabled):''}</td>`;
  const price=`${catalogField(index,'price',row.price===null?'':row.price,`Fiyat ${index+1}`,false,disabled)}`;
  const packageCell=catalogField(index,'packageQty',row.packageQty||'',`Koli adedi ${index+1}`,false,disabled);
- if(!isRisk)return `<tr data-catalog-row="${index}" class="${disabled?'catalog-imported':''}">${basic}<td>${price}</td><td>${packageCell}</td><td>${title}</td><td><button class="btn ${row.excluded?'secondary':'red'} small" type="button" onclick="catalogExcludeOrDelete(${index})">${row.imported?'Kayıttan sil':row.excluded?'Tekrar dahil et':'Hariç tut'}</button></td></tr>`;
+ if(!isRisk)return `<tr data-catalog-row="${index}" class="${disabled?'catalog-imported':''}">${basic}<td class="catalog-size-cell">${esc(row.size||catalogReadableSize(row.name)||'—')}</td><td>${price}</td><td>${packageCell}</td><td>${title}</td><td><button class="btn ${row.excluded?'secondary':'red'} small" type="button" onclick="catalogExcludeOrDelete(${index})">${row.imported?'Kayıttan sil':row.excluded?'Tekrar dahil et':'Hariç tut'}</button></td></tr>`;
  const selectedCategory=$('importGroup').value;const options=`<option value="${esc(groupIdForCategory(selectedCategory))}">${esc(selectedCategory)}</option>`;
  const group=`<span class="pill" title="Katalog yüklerken seçilen ortak ürün grubu">${esc(selectedCategory)}</span>`;
  const reviewed=!!row.reviewApproved;
  const review=`<label class="catalog-review-check"><input type="checkbox" aria-label="Kontrol ettim ${index+1}" onchange="approveCatalogRiskRow(${index},this.checked)" ${reviewed?'checked':''} ${disabled||row.excluded?'disabled':''}> Kontrol ettim, aktarıma dahil et</label><button class="catalog-exclude" type="button" onclick="excludeCatalogRiskRow(${index})" ${disabled?'disabled':''}>${row.excluded?'Tekrar dahil et':'Hariç tut'}</button><div class="catalog-review-feedback" data-state="${row.reviewMessageState||''}" aria-live="polite">${esc(row.reviewMessage||'')}</div>`;
- return `<tr data-catalog-row="${index}" class="${disabled?'catalog-imported':''}">${basic}<td>${group}</td><td>${price}</td><td>${packageCell}</td><td><span class="catalog-current-status">${title}</span><div class="catalog-risk-reason catalog-risk-reasons">${reasonHtml}</div><details><summary>PDF / Excel kaynak satır</summary><div class="catalog-risk-source">${esc(row.raw||'Kaynak metin yok')}</div></details></td><td>${review}</td></tr>`;
+ return `<tr data-catalog-row="${index}" class="${disabled?'catalog-imported':''}">${basic}<td class="catalog-size-cell">${esc(row.size||catalogReadableSize(row.name)||'—')}</td><td>${group}</td><td>${price}</td><td>${packageCell}</td><td><span class="catalog-current-status">${title}</span><div class="catalog-risk-reason catalog-risk-reasons">${reasonHtml}</div><details><summary>PDF / Excel kaynak satır</summary><div class="catalog-risk-source">${esc(row.raw||'Kaynak metin yok')}</div></details></td><td>${review}</td></tr>`;
 }
 // Önizlemedeki satırı yerinde güncelle. Tüm tabloyu yeniden çizmek, input'tan
 // onay kutusuna tıklarken change olayında hedef checkbox'ı DOM'dan kaldırıyordu.
@@ -1696,6 +1698,7 @@ function catalogRefreshOneRow(index){
  const titleEl=tr.querySelector('.catalog-current-status');if(titleEl)titleEl.innerHTML=title;
  const reasonsEl=tr.querySelector('.catalog-risk-reasons');if(reasonsEl)reasonsEl.innerHTML=reasonHtml;
  const nameInput=tr.querySelector(`input[aria-label="Ürün adı ${index+1}"]`);if(nameInput&&document.activeElement!==nameInput)nameInput.value=row.name;
+ const sizeCell=tr.querySelector('.catalog-size-cell');if(sizeCell)sizeCell.textContent=row.size||catalogReadableSize(row.name)||'—';
  const checkbox=tr.querySelector('input[type="checkbox"]');if(checkbox){checkbox.checked=!!row.reviewApproved;checkbox.disabled=!!row.imported||!!row.excluded;}
  const exclude=tr.querySelector('.catalog-exclude');if(exclude)exclude.textContent=row.excluded?'Tekrar dahil et':'Hariç tut';
  const feedback=tr.querySelector('.catalog-review-feedback');if(feedback){feedback.textContent=row.reviewMessage||'';feedback.dataset.state=row.reviewMessageState||'';}
@@ -1717,8 +1720,8 @@ function renderCatalogPreview(){
  $('catalogRiskCount').textContent=`${risk.length} satır`;
  $('catalogSafePager').innerHTML=catalogPageControls('safe',safe.length);
  $('catalogRiskPager').innerHTML=catalogPageControls('risky',risk.length);
- $('catalogPreviewRows').innerHTML=safe.slice(catalogPages.safe*CATALOG_PREVIEW_LIMIT,(catalogPages.safe+1)*CATALOG_PREVIEW_LIMIT).map(({r,idx})=>catalogRowHtml(r,idx,false)).join('')||'<tr><td class="empty" colspan="8">Doğrudan aktarılabilir ürün bulunamadı.</td></tr>';
- $('catalogRiskRows').innerHTML=risk.slice(catalogPages.risky*CATALOG_PREVIEW_LIMIT,(catalogPages.risky+1)*CATALOG_PREVIEW_LIMIT).map(({r,idx})=>catalogRowHtml(r,idx,true)).join('')||'<tr><td class="empty" colspan="9">Riskli satır bulunmuyor.</td></tr>';
+ $('catalogPreviewRows').innerHTML=safe.slice(catalogPages.safe*CATALOG_PREVIEW_LIMIT,(catalogPages.safe+1)*CATALOG_PREVIEW_LIMIT).map(({r,idx})=>catalogRowHtml(r,idx,false)).join('')||'<tr><td class="empty" colspan="9">Doğrudan aktarılabilir ürün bulunamadı.</td></tr>';
+ $('catalogRiskRows').innerHTML=risk.slice(catalogPages.risky*CATALOG_PREVIEW_LIMIT,(catalogPages.risky+1)*CATALOG_PREVIEW_LIMIT).map(({r,idx})=>catalogRowHtml(r,idx,true)).join('')||'<tr><td class="empty" colspan="10">Riskli satır bulunmuyor.</td></tr>';
  $('catalogWarnings').textContent=pendingCatalog.warnings.map(x=>'• '+x).join('\n')||'Uyarı yok.';
  $('catalogRawSample').textContent=pendingCatalog.samples.slice(0,10).join('\n');
  $('catalogEmptyHint').textContent=records.length?'': 'Tablo okunamadı. Başlığı “Ürün Adı, Stok Kodu, Fiyat, Koli Adedi” olan bir Excel dosyası deneyin.';
@@ -1739,7 +1742,7 @@ function editCatalogPreview(index,key,value,inputEl){
   const cleaned=splitDimensionsAndPackaging(value,row.section);
   row.baseName=cleaned.name;
   const resolved=catalogResolveRowProduct(cleaned.name,row.section);
-  row.name=resolved.name;
+  row.name=resolved.name;row.size=catalogReadableSize(row.name);
   row.issues=(row.issues||[]).filter(i=>!/(Ürün tipi|Ana sistem|Ürün adının sonundaki sayı|Tablo sütun)/i.test(i));
   row.issues.push(...resolved.issues);
   if(cleaned.packageQty&&!row.packageQty)row.packageQty=cleaned.packageQty;
@@ -1808,7 +1811,7 @@ function excludeCatalogRiskRow(index){
 function downloadCatalogPreview(){
  if(!pendingCatalog?.rows?.length)return;
  if(!window.XLSX)return alert('Excel kütüphanesi yüklenemedi.');
- const wb=XLSX.utils.book_new(),rows=pendingCatalog.rows.map(r=>({'Stok Kodu':r.code,'Üst Başlık':r.section||pendingCatalog.list,'Ürün Adı':r.name,'Liste Fiyatı':r.price??'','Koli / Ambalaj':r.packageQty||'','1 Boy Uzunluğu':r.lengthPerPiece||'','Birim':r.unit,'Grup':r.group,'PDF Sayfa / Sekme':r.page,'Kontrol Uyarısı':catalogRowSafety(r,pendingCatalog.list,$('importGroup').value).join('; '),'Kaynak Metin':r.raw}));
+ const wb=XLSX.utils.book_new(),rows=pendingCatalog.rows.map(r=>({'Stok Kodu':r.code,'Üst Başlık':r.section||pendingCatalog.list,'Ürün Adı':r.name,'Liste Fiyatı':r.price??'','Ölçü':r.size||catalogReadableSize(r.name)||'','Koli / Ambalaj':r.packageQty||'','1 Boy Uzunluğu':r.lengthPerPiece||'','Birim':r.unit,'Grup':r.group,'PDF Sayfa / Sekme':r.page,'Kontrol Uyarısı':catalogRowSafety(r,pendingCatalog.list,$('importGroup').value).join('; '),'Kaynak Metin':r.raw}));
  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Tespit Edilen Ürünler');XLSX.writeFile(wb,'Katalog_Kontrol.xlsx');
 }
 async function importCatalog(){
