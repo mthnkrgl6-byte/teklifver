@@ -1172,11 +1172,11 @@ const isPriceToken = s => /(?:\d[.,]\d{2}(?!\d)|[₺€$]|\bTL\b|\bTRY\b)/i.test
 const numberOrNull = v => v === null || v === undefined || String(v).trim()==='' ? null : catalogPrice(v);
 function pdfKey(s){
   const k=norm(s);
-  if(/(?:stok\s*kod|urun\s*kod|malzeme\s*kod|stok\s*no|sku|^kod$|^code$)/.test(k))return 'code';
-  if(/(?:urun\s*adi|malzeme\s*adi|urun\s*tanim|aciklama|description|product\s*name|^urun$|^product$|^tanimi$)/.test(k))return 'name';
-  if(/(?:liste\s*fiyat|birim\s*fiyat|^fiyat|\bprice\b|satis\s*fiyati|^tl$)/.test(k))return 'price';
+  if(/(?:stok\s*kod|urun\s*kod|malzeme\s*kod|stok\s*no|urun\s*no|stok\s*numara|urun\s*numara|sku|article\s*(?:no|number)|item\s*(?:no|number)|^kod$|^code$)/.test(k))return 'code';
+  if(/(?:urun\s*adi|malzeme\s*adi|urun\s*tanim|malzeme\s*tanim|aciklama|description|product\s*name|malzeme\s*cinsi|^urun$|^product$|^tanimi$)/.test(k))return 'name';
+  if(/(?:liste\s*fiyat|birim\s*fiyat|net\s*fiyat|^fiyat|\bprice\b|satis\s*fiyati|per\s*piece|unit\s*price|^tl$|^try$)/.test(k))return 'price';
   if(/(?:1\s*boy|boy\s*uzunlug|boy\s*mt|boy\s*metre|boy\s*olcus|boy\s*boyu|tek\s*boy)/.test(k))return 'length';
-  if(/(?:olcu|cap|ebat|boyut|dimension|size|^dn$)/.test(k))return 'size';
+  if(/(?:olcu|cap|ebat|boyut|dimension|size|^dn$|nominal\s*cap|dimensions)/.test(k))return 'size';
   if(/(?:urun\s*grup|kategori|category)/.test(k))return 'group';
   if(/(?:^birim$|unit)/.test(k))return 'unit';
   if(/(?:koli|paket\s*(?:ici|adedi|adet)|ambalaj|kutu|karton|kolide)/.test(k))return 'package';
@@ -1221,6 +1221,14 @@ const skipPdfLine = t => {
  return !v || /^(?:sayfa\s*\d+|page\s*\d+|www\b|kalde$|stok kodu|stok no|urun adi|urun kodu|fiyat listesi|liste fiyati|malzeme adi|ambalaj miktari|olcu cap|birim fiyati)/.test(v) ||
    /(?:@|https?:|www\.|tel\s*[:.]|fax\s*[:.])/.test(t) || /^\d{1,3}\s*(?:\/\s*\d{1,3})?$/.test(t);
 };
+// Measured dimensions remain separate from carton quantities and prices.
+function catalogReadableSize(value){
+ const text=catalogText(value||'');
+ const pair=text.match(/(?:^|\s|Ø)\s*(\d{1,5})\s*[x×X]\s*(\d{1,5})(?=\s|$|[.,;])/);
+ if(pair)return pair[1]+'x'+pair[2];
+ const single=text.match(/(?:^|\s)(?:Ø\s*|DN\s*)?(\d{2,4})(?:\s*mm)?(?=\s|$)/i);
+ return single?single[1]:'';
+}
 function pdfVisualLines(content){
  const tokens=[];
  for(const it of content.items||[]){
@@ -1238,6 +1246,29 @@ function pdfVisualLines(content){
  for(const row of rows){row.items.sort((a,b)=>a.x-b.x); row.text=row.items.map(it=>it.text).join(' ').replace(/\s+/g,' ').trim();}
  return rows;
 }
+
+/* Some catalogues contain two independent product tables side-by-side.
+   A duplicate "code" heading in separate halves is required before splitting;
+   this avoids breaking ordinary single tables with several numeric columns. */
+function catalogPdfReadingBlocks(content,pageWidth){
+ const lines=pdfVisualLines(content),mid=pageWidth/2;
+ if(!Number.isFinite(mid)||mid<170)return [lines];
+ let duplicatedHeader=false;
+ for(const line of lines){
+  const codes=line.items.filter(it=>pdfKey(it.text)==='code').map(it=>it.x);
+  if(codes.some(x=>x<mid-25)&&codes.some(x=>x>mid+20)){duplicatedHeader=true;break;}
+ }
+ if(!duplicatedHeader)return [lines];
+ const left=[],right=[];
+ for(const row of lines){
+  for(const [items,into] of [[row.items.filter(it=>it.x<mid),left],[row.items.filter(it=>it.x>=mid),right]]){
+   if(!items.length)continue;
+   into.push({y:row.y,items,text:items.map(it=>it.text).join(' ').replace(/\s+/g,' ').trim()});
+  }
+ }
+ return left.length&&right.length?[left,right]:[lines];
+}
+
 function detectPdfColumns(row){
  const out={};
  for(let i=0;i<row.items.length;i++){const item=row.items[i];let key=pdfKey(item.text);if(!key&&i<row.items.length-1){const next=row.items[i+1];if(next.x-item.x-item.width<14)key=pdfKey(item.text+' '+next.text);}if(key && out[key]===undefined)out[key]=item.x;}
@@ -1308,7 +1339,8 @@ function pdfItemFromLine(line,columns,context,page,recognizedHeader,group,family
  if(/^\d{1,3}$/.test(raw)&&line.items?.length===1&&(line.items[0].x>400||line.y<60))return null;
  if(recognizedHeader || (skipPdfLine(raw)&&!(bareCatalogDimension(raw)&&catalogText(context))))return null;
  const cell=layoutCells(line.items,columns)||{};
- const code=findSku(cell.code||'')||findSku(raw);
+ const explicitCode=catalogText(cell.code||'');
+ const code=(explicitCode&&/^[a-z0-9][a-z0-9._\-/]{2,32}$/i.test(explicitCode)?explicitCode:'')||findSku(raw);
  let name=catalogText(cell.name||cell.size||''),unit=normalizeUnit(cell.unit||'');
  let price=null,priceVerified=false,issues=[];
  if(columns?.price!==undefined){
@@ -1342,7 +1374,7 @@ function pdfItemFromLine(line,columns,context,page,recognizedHeader,group,family
   if(/\b\d+\s+\d+\s+\d+(?:[.,]\d+)?\s*$/.test(name))issues.push('Tablo sütun başlıkları bulunamadı');
   if(/\s+\d[\d.,]*\s*(?:TL|TRY|₺)\s*$/i.test(raw))issues.push('Fiyat sütunu belirsiz');
  }
- return {code,name,baseName,section:resolved.section,price,priceVerified,unit,packageQty:fields.packageQty,lengthPerPiece:fields.lengthPerPiece,group:detectCatalogGroup(name)||detectCatalogGroup(heading)||detectCatalogGroup(family)||group||'',page,raw,origin:'PDF',issues};
+ return {code,name,baseName,section:resolved.section,price,priceVerified,size:size||catalogReadableSize(name),unit,packageQty:fields.packageQty,lengthPerPiece:fields.lengthPerPiece,group:detectCatalogGroup(name)||detectCatalogGroup(heading)||detectCatalogGroup(family)||group||'',page,raw,origin:'PDF',issues};
 }
 function catalogParsePdfRows(rows,page,state){
  const parsed=[];
@@ -1350,7 +1382,7 @@ function catalogParsePdfRows(rows,page,state){
   const r=rows[ri];
   const keys=r.items.map(x=>pdfKey(x.text)).filter(Boolean);
   const detectedGroup=detectCatalogGroup(r.text);
-  const header=keys.includes('code') && (keys.includes('name')||keys.includes('price')||keys.includes('size')||keys.includes('package')) || keys.includes('name')&&keys.includes('price');
+  const header=(keys.includes('code')&&(keys.includes('name')||keys.includes('price')||keys.includes('size')||keys.includes('package'))) || (keys.includes('name')&&(keys.includes('price')||keys.includes('size')));
   const joinedHeader=/\b(?:stok\s*kodu|malzeme\s*kodu)\b/.test(norm(r.text)) && /\b(?:fiyat|urun|olcu|cap)\b/.test(norm(r.text));
   if(header||joinedHeader){
    // Kalde PDF price sheets wrap some column titles over 2 lines:
@@ -1365,6 +1397,10 @@ function catalogParsePdfRows(rows,page,state){
     bandItems.push(...headerParts);
    }
    state.columns=detectPdfColumns({items:bandItems});
+   if(!state.columns && !state.layoutWarning){
+    state.layoutWarning=true;
+    // A combined, positionless header is not evidence of a verified price.
+   }
    continue;
   }
   if(pdfProductHeader(r)){
@@ -1417,7 +1453,13 @@ async function catalogReadPDF(file){
     try{visual=await catalogOCR(page,p,state);}catch(err){state.warnings.push(`Sayfa ${p}: OCR başarısız — ${err.message}`);continue;}
    }
    if(state.samples.length<16)state.samples.push(...visual.map(r=>`Sayfa ${p}: ${r.text}`).filter(Boolean).slice(0,16-state.samples.length));
-   state.rows.push(...catalogParsePdfRows(visual,p,state));
+   const blocks=charCount<45?[visual]:catalogPdfReadingBlocks(content,page.getViewport({scale:1}).width);
+   if(blocks.length>1)state.warnings.push(`Sayfa ${p}: iki bağımsız tablo tespit edildi; sol ve sağ bölümler ayrı okundu.`);
+   for(const block of blocks){
+    const partState=blocks.length>1?{columns:null,context:'',family:'',group:'',rows:state.rows}:state;
+    const parsed=catalogParsePdfRows(block,p,partState);
+    state.rows.push(...parsed);
+   }
   }
  }finally{await documentPdf.destroy?.();}
  return state;
@@ -1453,7 +1495,7 @@ function catalogRowsFromSheet(sheet,sheetName){
   const baseName=cleanCatalogProductName(name,price);
   const resolved=catalogResolveRowProduct(baseName,heading,catalogFamilyHeading(heading)?heading:'');
   issues.push(...resolved.issues);
-  results.push({code,name:resolved.name,baseName,section:resolved.section,price,priceVerified:true,sourceRow:rows.indexOf(raw),unit:normalizeUnit(cell.unit),packageQty:cleaned.packageQty,lengthPerPiece:cleaned.lengthPerPiece,group:detectCatalogGroup(baseName)||detectCatalogGroup(heading),page:sheetName,raw:vals.join(' | '),origin:'Excel',issues});
+  results.push({code,name:resolved.name,baseName,section:resolved.section,price,priceVerified:true,size:size||catalogReadableSize(resolved.name),sourceRow:rows.indexOf(raw),unit:normalizeUnit(cell.unit),packageQty:cleaned.packageQty,lengthPerPiece:cleaned.lengthPerPiece,group:detectCatalogGroup(baseName)||detectCatalogGroup(heading),page:sheetName,raw:vals.join(' | '),origin:'Excel',issues});
  }
  return {results,skipped,headerFound:!!columns};
 }
@@ -1819,7 +1861,7 @@ async function confirmCatalogImport(){
   const name=catalogText(r.name);
   const prior=temp.find(p=>p.list===list&&(code?p.code===code:norm(p.name)===norm(name)));
   if(prior&&!allowUpdate){skipped++;continue;}
-  const data={id:prior?.id||uid(),name,code,section,price:r.price===null?(prior?.price??null):r.price,list,category,groupId:groupIdForCategory(category),unit:r.unit||'adet',packageQty:r.packageQty||'',lengthPerPiece:r.lengthPerPiece||'',sourceOrder:prior?.sourceOrder??r.sourceOrder??pendingCatalog.rows.indexOf(r),sourcePage:r.page??prior?.sourcePage??''};
+  const data={id:prior?.id||uid(),name,code,section,price:r.price===null?(prior?.price??null):r.price,list,category,groupId:groupIdForCategory(category),unit:r.unit||'adet',size:r.size||catalogReadableSize(name),packageQty:r.packageQty||'',lengthPerPiece:r.lengthPerPiece||'',sourceOrder:prior?.sourceOrder??r.sourceOrder??pendingCatalog.rows.indexOf(r),sourcePage:r.page??prior?.sourcePage??''};
   if(prior){Object.assign(prior,data);changed++;}else{temp.push(data);newCount++;}
   actuallySaved.push({row:r,productId:data.id});
  }
