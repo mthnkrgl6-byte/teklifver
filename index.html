@@ -1,189 +1,1621 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="tr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Teklif Yönetim Platformu</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="styles.css" />
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  </head>
-  <body>
-    <div class="layout">
-      <aside class="sidebar">
-        <div class="brand">kalde</div>
-        <button class="menu-btn active" data-page="quote">Teklif Merkezi</button>
-        <button class="menu-btn" data-page="price">Fiyat Listeleri</button>
-      </aside>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0f2340">
+  <title>Ortak Akıllı Teklif Merkezi 3.8</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    .catalog-status{font-size:12px;color:#59768a;margin:12px 0 0;font-weight:700}.catalog-status[data-state="ok"]{color:#168074}.catalog-status[data-state="warn"],.catalog-status[data-state="error"]{color:#ba5c3a}.catalog-preview{margin-top:18px;border-top:1px solid #e6eef1;padding-top:20px}.catalog-checkbox{display:flex;gap:10px;align-items:center;font-size:12px;color:#425b69;cursor:pointer}.catalog-checkbox input{width:17px;height:17px;accent-color:#f28c28}.catalog-debug{white-space:pre-wrap;background:#f6f9fa;border:1px solid #e6edf0;border-radius:8px;padding:13px;font:11px/1.65 monospace;max-height:180px;overflow:auto;color:#667b89;margin:12px 0}
+    .catalog-manager{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.catalog-manager .field{min-width:230px;flex:1;max-width:500px}.catalog-manager .hint{margin:4px 0 0}.catalog-manager .btn.red{min-width:190px}.catalog-clean-note{font-size:12px;color:#6c8092;margin:12px 0 0}.catalog-folder-list{display:grid;gap:11px}.catalog-folder{border:1px solid #dfe8ed;background:#fff;border-radius:12px;overflow:hidden}.catalog-folder[open]{border-color:#efbc82;box-shadow:0 4px 20px #9a611210}.catalog-folder summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 18px;background:#f8fafb}.catalog-folder summary::-webkit-details-marker{display:none}.catalog-folder summary:hover{background:#fff4ea}.catalog-folder[open] summary{background:#fff7ef;border-bottom:1px solid #f5d7b3}.catalog-folder-main{display:flex;align-items:center;gap:12px;min-width:0}.catalog-folder-arrow{font-size:15px;color:#f28c28;transition:transform .15s}.catalog-folder[open] .catalog-folder-arrow{transform:rotate(90deg)}.catalog-folder-title{font-size:14px;font-weight:800;color:#213d51;display:block}.catalog-folder-source{display:block;font-size:11px;font-weight:600;color:#8093a0;margin-top:5px}.catalog-folder-stats{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.catalog-folder-stats .pill{background:#fff1e2}.catalog-folder-body{padding:13px}.catalog-folder-body table{min-width:710px}.catalog-folder-body .tablewrap{margin:0}.catalog-folder-none{padding:30px;text-align:center;color:#8a9cac}.catalog-folder-list>.empty{padding:36px;text-align:center;color:#8799a7}
+    :root{--navy:#102b4e;--navy-deep:#0b1e36;--teal:#f28c28;--teal-dark:#d46f08;--ink:#182d44;--text:#34465a;--muted:#8290a1;--line:#e8edf2;--surface:#fff;--bg:#f5f7f9;--shadow:0 3px 15px rgba(14,35,57,.03);font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--text);background:var(--bg)}
+    *{box-sizing:border-box}html{scroll-behavior:auto}body{margin:0}button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #ffd2a3;outline-offset:2px}a{color:inherit;text-decoration:none}h1,h2,h3,p{margin-top:0}.ic{height:18px;width:18px;stroke:currentColor;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}.ic.small{height:15px;width:15px}.ic.big{height:23px;width:23px}
+    .shell{display:flex;min-height:100vh}.side{position:sticky;top:0;align-self:flex-start;flex:none;width:244px;height:100vh;padding:31px 13px 20px;background:var(--navy-deep);color:#bbcbda;display:flex;flex-direction:column;z-index:5}.brand{padding:0 14px 38px;display:flex;gap:11px;align-items:center}.brand-mark{height:42px;width:42px;display:flex;align-items:center;justify-content:center;color:white;background:linear-gradient(145deg,#f7a23a,#d46f08);border-radius:12px;box-shadow:0 8px 18px #00102050;font-family:'Plus Jakarta Sans',Arial,sans-serif;font-weight:900;letter-spacing:-1px;font-size:23px}.brand-label{display:flex;flex-direction:column}.brand-label strong{font-family:'Plus Jakarta Sans',Arial,sans-serif;font-size:20px;color:white;letter-spacing:.9px;font-weight:800;line-height:1.15}.brand-label span{font-size:9px;font-weight:800;letter-spacing:1.7px;color:#7890a5;margin-top:7px}.side-heading{font-size:10px;font-weight:800;letter-spacing:1.55px;color:#70869a;padding:0 16px;margin:14px 0 8px}.nav{width:100%;display:flex;gap:12px;align-items:center;text-align:left;background:transparent;border:1px solid transparent;color:#adc2d3;padding:12px 13px;border-radius:9px;min-height:44px;font-size:13px;font-weight:600;transition:background .16s,color .16s}.nav .ic{color:#7894a8}.nav:hover{color:white;background:#18314d}.nav.active{background:#183859;color:#fff;border-color:#365679}.nav.active .ic{color:#f7a23a}.nav b{margin-left:auto;font-size:10px;padding:2px 6px;border-radius:5px;background:#27486b;color:#c9dde9}.side-bottom{margin-top:auto}.side-status{margin:14px 9px 0;background:#132840;border:1px solid #2a4563;border-radius:13px;padding:16px}.side-status .status-top{display:flex;align-items:center;gap:8px;color:#f2f7fa;font-size:12px;font-weight:700}.status-dot{width:7px;height:7px;border-radius:50%;background:#f7a23a;box-shadow:0 0 0 3px #f7a23a21}.side-status p{font-size:11px;line-height:1.65;color:#91a7b8;margin:9px 0 0}.side-footer{font-size:11px;color:#688399;padding:21px 16px 0}
+    .workspace{width:calc(100% - 244px);min-width:0}.topbar{background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);height:76px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(24px,3vw,52px);gap:18px}.breadcrumb{display:flex;align-items:center;gap:10px;color:#8897a6;font-size:12px;font-weight:700;letter-spacing:.1px}.breadcrumb strong{color:#243a50;font-weight:800}.breadcrumb .slash{color:#d2dae3;font-size:19px;font-weight:400}.top-actions{display:flex;align-items:center;gap:15px}.top-version{font-size:11px;color:#8b98a5;font-weight:600}.avatar{border:1px solid #f0ddc7;background:#fff3e8;color:#9d5b0a;font-size:12px;font-weight:800;border-radius:50%;height:34px;width:34px;display:flex;align-items:center;justify-content:center}
+    .main{max-width:1690px;padding:34px clamp(23px,3vw,52px) 65px;margin:auto}.tab{animation:appear .17s ease-out}@keyframes appear{from{opacity:.3;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}.hidden{display:none!important}.eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:10px;font-weight:800;letter-spacing:1.7px;text-transform:uppercase;color:var(--teal-dark);margin-bottom:11px}.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:26px}.page-head h1{font:800 clamp(25px,2.3vw,32px)/1.2 'Plus Jakarta Sans',Arial,sans-serif;letter-spacing:-1.15px;color:var(--ink);margin:0 0 9px}.page-head .sub{margin:0;line-height:1.55;color:#8090a1;font-size:13px}.page-head .right{display:flex;align-items:center;gap:8px}.btn{border:1px solid transparent;background:var(--teal);color:white;min-height:39px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:9px;padding:10px 16px;font-size:12px;font-weight:800;white-space:nowrap;transition:transform .12s,background .13s,box-shadow .13s}.btn:hover:not(:disabled){background:var(--teal-dark);box-shadow:0 6px 18px #f28c2819;transform:translateY(-1px)}.btn.secondary{color:#385267;background:#f1f5f7;border-color:#e8eef2}.btn.secondary:hover{background:#e9f1f3;box-shadow:none}.btn.outline{color:#275366;background:white;border-color:#dce6eb}.btn.outline:hover{background:#f7fafb;box-shadow:none}.btn.orange{background:#193d5b}.btn.orange:hover{background:#0f2d47}.btn.red{background:#fff0ef;color:#b34037;border-color:#fae4e0}.btn.red:hover{background:#ffe9e5;box-shadow:none}.btn.small{font-size:11px;min-height:31px;padding:6px 10px;border-radius:7px}.btn.large{min-height:45px;padding:12px 18px;font-size:13px}.btn .ic{width:16px;height:16px}.btn.icon-only{padding:9px;width:39px}.btn:focus-visible{outline-offset:3px}
+    .hero{position:relative;overflow:hidden;display:grid;grid-template-columns:1.06fr 1fr;align-items:center;gap:20px;background:linear-gradient(115deg,#0c2440 0%,#123154 58%,#1a4061 78%,#f28c28 140%);min-height:283px;border-radius:17px;padding:35px clamp(25px,3vw,46px);color:#fff;margin-bottom:21px}.hero:before{content:'';position:absolute;right:-110px;top:-200px;width:590px;height:590px;border-radius:50%;border:1px solid #ffffff14;box-shadow:0 0 0 65px #ffffff05,0 0 0 135px #ffffff06,0 0 0 205px #ffffff03;pointer-events:none}.hero-content{z-index:1;position:relative}.hero-kicker{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:800;letter-spacing:2px;color:#ffd2a3;margin-bottom:19px}.hero-kicker:before{content:'';display:block;width:20px;height:1px;background:#f7a23a}.hero h1{font:800 clamp(27px,2.5vw,37px)/1.19 'Plus Jakarta Sans',Arial,sans-serif;letter-spacing:-1.35px;margin:0 0 16px;max-width:490px}.hero p{color:#a9c4d2;font-size:13px;line-height:1.75;margin:0 0 23px;max-width:425px}.hero .btn{background:#f28c28;color:#082d33}.hero .btn:hover{background:#ffac4d}.hero .light-link{color:#d3e6e9;font-size:12px;font-weight:700;border:0;background:none;display:inline-flex;align-items:center;gap:6px;margin-left:9px}.hero-visual{z-index:1;justify-self:end;width:min(100%,380px);padding-left:10px}.mini-window{background:#ffffffee;border:1px solid #eaf2f3;border-radius:14px;box-shadow:0 18px 50px #00142750;transform:rotate(-1.7deg);padding:18px;color:#27394a}.mini-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:13px;border-bottom:1px solid #e6eaee}.mini-head strong{font-size:11px;font-weight:800;color:#22394e}.mini-dots{display:flex;gap:4px}.mini-dots i{display:block;width:6px;height:6px;border-radius:50%;background:#ccd7df}.mini-dots i:first-child{background:#2bbda9}.mini-row{display:flex;align-items:center;gap:10px;padding:10px 9px;border:1px solid #edf1f3;border-radius:9px;margin-top:7px;background:white}.mini-symbol{width:30px;height:30px;border-radius:8px;background:#e5f6f2;color:#14867c;display:flex;align-items:center;justify-content:center}.mini-row strong{display:block;font-size:11px;color:#24384b}.mini-row small{display:block;font-size:10px;color:#8da0aa;margin-top:3px}.mini-row .mini-check{margin-left:auto;color:#0c9f87}.mini-arrow{height:12px;margin-left:23px;border-left:1px dashed #90c6be}.mini-ok{display:inline-flex;align-items:center;gap:6px;margin:12px 0 0;color:#15766c;background:#e3f7f0;border-radius:5px;padding:6px 9px;font-weight:800;font-size:10px}
+    .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:22px}.metric,.panel,.soft-card{background:var(--surface);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow)}.metric{min-height:119px;display:flex;align-items:flex-start;justify-content:space-between;padding:20px 21px}.metric small{display:block;color:#8090a0;font-size:11px;font-weight:700}.metric b{display:block;margin:13px 0 0;color:#1b3046;font:800 29px/1 'Plus Jakarta Sans',Arial,sans-serif;letter-spacing:-1.4px}.metric-icon{height:37px;width:37px;border-radius:10px;background:#eef6f7;color:#388d91;display:grid;place-items:center}.metric:nth-child(2) .metric-icon{background:#f3f0fc;color:#8c7abb}.metric:nth-child(3) .metric-icon{background:#fdf3ea;color:#c89659}.metric:nth-child(4) .metric-icon{background:#eff3fc;color:#6b90c8}
+    .content-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:19px}.panel{padding:25px;margin-bottom:20px}.panel h2{color:#21374c;font:800 16px/1.45 'Plus Jakarta Sans',Arial,sans-serif;letter-spacing:-.45px;margin:0}.section-heading{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:23px}.section-heading .subtitle{font-size:12px;color:#8a98a8;margin-top:5px}.section-heading .small-link{display:inline-flex;gap:6px;align-items:center;color:var(--teal-dark);border:0;background:none;font-size:11px;font-weight:800}.setup-steps{display:flex;flex-direction:column}.setup-step{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid #eef1f3}.setup-step:first-child{padding-top:0}.setup-step:last-child{border-bottom:none;padding-bottom:0}.step-index{height:36px;width:36px;display:grid;place-items:center;background:#f1f4f7;border:1px solid #edf1f3;border-radius:10px;font:800 12px 'Plus Jakarta Sans',Arial,sans-serif;color:#63778b;flex:none}.setup-step strong{font-size:12px;color:#2c4154;display:block;margin-bottom:4px}.setup-step p{font-size:11px;color:#8695a4;margin:0;line-height:1.5}.setup-step .step-go{margin-left:auto;color:#afbecb;border:0;background:transparent;padding:7px;display:inline-flex;align-items:center;justify-content:center}.example-label{display:flex;align-items:center;gap:8px;color:#6a8490;font-size:11px;font-weight:800;margin-bottom:17px}.example-quote{border:1px solid #e6edf1;background:#f8fafb;border-radius:11px;padding:17px 16px}.example-quote .label{font-size:10px;color:#9ba8b4;display:block;margin-bottom:7px}.example-quote strong{font-size:14px;color:#233c4c;display:block}.transform-arrow{display:flex;justify-content:center;color:#30aa9b;margin:12px}.example-result{background:#ebf8f4;border:1px solid #daf0e9;border-radius:11px;padding:16px}.example-result .label{font-size:10px;color:#57988b;display:block;margin-bottom:6px}.example-result strong{font-size:13px;color:#176b63}.example-foot{font-size:11px;color:#91a0aa;line-height:1.55;margin:15px 0 0}.footer{font-size:11px;color:#a0acb6;margin-top:24px;line-height:1.6}
+    .row{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}.row.space{justify-content:space-between;align-items:center}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}.field{flex:1;min-width:150px}.field.compact{flex:0 0 145px}.panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:20px;margin-bottom:21px;border-bottom:1px solid #edf0f3}.panel-header h2{font-size:15px}.panel-header p{font-size:11px;color:#8898a8;margin:4px 0 0}.serial{display:grid;place-items:center;border:1px solid #d5ebe8;background:#f0faf8;color:#0c9a8d;min-width:30px;width:30px;height:30px;border-radius:8px;font-size:11px;font-weight:800}.panel-title-row{display:flex;align-items:center;gap:11px}.form-line{margin-bottom:17px}label{display:block;font-size:11px;font-weight:800;color:#64798c;margin:0 0 8px}input,select,textarea{display:block;width:100%;background:white;color:#2d4257;border:1px solid #dfe7ed;border-radius:8px;padding:11px 12px;font-size:12px;min-height:40px;box-shadow:0 1px 1px #1a2b3803}input::placeholder,textarea::placeholder{color:#acb7c1}input:focus,select:focus,textarea:focus{border-color:#56c7ba;box-shadow:0 0 0 3px #e0f6f2;outline:0}select{appearance:auto}input[type=file]{height:auto;min-height:0;border:0;box-shadow:none;padding:6px 0 0;background:transparent;font-size:11px;color:#75899a}.hint{font-size:11px;line-height:1.55;color:#8999a8;margin:11px 0 0}.hint code{background:#eef5f6;border:1px solid #e0ebed;border-radius:4px;padding:2px 5px;color:#316e72}.muted{color:#8495a6;font-size:12px;line-height:1.65}.form-section + .form-section{margin-top:15px}
+    .steps-strip{display:flex;align-items:center;gap:12px;margin:-4px 0 23px}.strip-step{display:flex;align-items:center;gap:9px;color:#8f9fae;font-size:11px;font-weight:700}.strip-step .n{height:24px;width:24px;background:#edf1f5;display:grid;place-items:center;border-radius:50%;color:#9aaab7;font-size:10px}.strip-step.is-active{color:#177e75}.strip-step.is-active .n{background:#d9f4ed;color:#108a78}.strip-sep{height:1px;width:35px;background:#dce5e9;flex:none}.source-grid{display:grid;grid-template-columns:.88fr 1.12fr;gap:16px;margin-bottom:17px}.source-box{background:#fcfdfd;border:1px solid #e8eef1;border-radius:11px;padding:17px;min-width:0}.source-title{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:#2e485b;margin-bottom:14px}.source-title .ic{color:#36a79d}.drop{position:relative;border:1.5px dashed #bfd8d7;background:#f5fbfa;border-radius:10px;min-height:163px;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px;transition:border-color .18s,background .18s;cursor:pointer}.drop:hover,.drop.dragging{border-color:#37b1a6;background:#edf9f5}.drop-icon{height:38px;width:38px;border-radius:10px;display:grid;place-items:center;background:white;color:#1ba494;box-shadow:0 3px 12px #123b3810;margin-bottom:10px}.drop strong{font-size:12px;color:#24495a}.drop span{font-size:11px;color:#90a3ac;line-height:1.5;margin-top:5px}.drop input{position:absolute;inset:0;height:100%;width:100%;opacity:0;cursor:pointer;padding:0}.drop .file-chosen{font-size:11px;font-weight:700;color:#198f84;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.source-box textarea{min-height:163px;max-height:240px;line-height:1.65;resize:vertical;box-shadow:none;background:white}.action-ribbon{display:flex;justify-content:space-between;align-items:center;gap:20px;border-top:1px solid #edf1f3;padding-top:19px;margin-top:17px}.action-ribbon .hint{margin:0}.processing-status{color:#278a85;font-size:11px;font-weight:700}
+    .tablewrap{overflow:auto;border:1px solid #ebeff3;border-radius:9px}table{width:100%;border-collapse:collapse;font-size:12px;min-width:720px}th{text-align:left;background:#f7f9fa;color:#718294;padding:13px 14px;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}td{padding:13px 14px;border-bottom:1px solid #edf1f4;vertical-align:middle;color:#46596a;font-size:12px}tr:last-child td{border-bottom:none}tr:hover td{background:#fcfdfd}td b{color:#243b4f}td input,td select{min-height:34px;padding:7px 9px;font-size:11px;min-width:90px}td input[type=number]{min-width:85px}.pill{display:inline-flex;align-items:center;border-radius:6px;background:#e8f7f1;color:#17826f;padding:5px 8px;font-size:10px;font-weight:800;white-space:nowrap}.pill.warn{background:#fff5e2;color:#a57426}.pill.bad{background:#fff0ef;color:#b94a43}.empty{text-align:center;padding:37px!important;color:#99a8b5;font-size:12px}.empty-state{padding:27px 18px;text-align:center;color:#92a2ae}.empty-state svg{color:#b6c6d1}.empty-state strong{display:block;font-size:12px;color:#506579;margin-top:7px}.empty-state p{font-size:11px;margin:5px auto;max-width:340px}
+    .offer-finish{border-top:1px solid #e9edf1;margin-top:22px;padding-top:20px;display:grid;grid-template-columns:minmax(250px,1fr) minmax(280px,370px);gap:25px;align-items:end}.total-card{border:1px solid #dfebe9;background:linear-gradient(120deg,#f5fbf9,#eff8f7);border-radius:10px;padding:19px 21px;text-align:right}.total-card small{font-size:11px;color:#6e8c90;font-weight:700}.total{font:800 clamp(22px,2vw,29px) 'Plus Jakarta Sans',Arial,sans-serif;color:#126c66;letter-spacing:-1px;margin:7px 0 0}.action-bottom{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:17px;flex-wrap:wrap}.inline-icon{display:inline-flex;align-items:center;justify-content:center;border-radius:6px;color:#53798f;background:#edf4f6;height:24px;width:24px}
+    .catalog-intro{display:flex;gap:14px;align-items:center;background:#fff4e8;border:1px solid #dcefea;padding:16px;border-radius:10px;margin-bottom:20px}.catalog-intro .inline-icon{background:#d5f0e9;color:#179385;height:34px;width:34px}.catalog-intro p{margin:0;font-size:11px;line-height:1.6;color:#6a9192}.catalog-intro strong{font-size:12px;color:#27766e;display:block;margin-bottom:3px}.setting-note{border:1px solid #ddebe8;background:#f5fbf9;padding:19px;border-radius:10px;color:#587779;line-height:1.6;font-size:12px}.setting-note strong{color:#246f68}.rule-banner{background:linear-gradient(110deg,#10283e,#193e51);border-radius:11px;color:#e5f5f5;padding:22px;display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:20px}.rule-banner h3{font-size:14px;font-weight:800;margin:0 0 7px;color:white}.rule-banner p{font-size:11px;color:#abcbd0;margin:0;max-width:590px;line-height:1.6}.rule-banner .ic{height:34px;width:34px;color:#4cceb9}.dictionary-visual{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:17px 0 0}.dictionary-visual span{border-radius:7px;border:1px solid #e7ecee;color:#425d6b;background:#fafcfc;padding:9px 13px;font-size:11px;font-weight:800}.dictionary-visual .arrow{border:0;background:none;color:#2aa69a}.dictionary-visual span:last-child{background:#e8f7f3;border-color:#d0ece7;color:#19796e}
+    @media(max-width:1240px){.side{width:214px}.workspace{width:calc(100% - 214px)}.hero{grid-template-columns:1fr .85fr}.hero-visual{max-width:330px}.content-grid{grid-template-columns:1fr 1fr}.cards{gap:10px}.metric{padding:17px}.main{padding:27px}}
+    @media(max-width:1040px){.hero{grid-template-columns:1fr}.hero-visual{display:none}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.content-grid,.grid2,.source-grid{grid-template-columns:1fr}.grid3{grid-template-columns:1fr 1fr}.offer-finish{grid-template-columns:1fr}}
+    @media(max-width:720px){.shell{display:block}.side{width:100%;height:auto;position:sticky;top:0;z-index:20;display:block;padding:11px}.brand{padding:3px 7px 12px}.brand-mark{width:34px;height:34px;font-size:19px;border-radius:8px}.brand-label strong{font-size:17px}.brand-label span{font-size:8px}.side-heading,.side-bottom{display:none}.nav{width:auto;min-height:36px;padding:8px 10px;font-size:11px;white-space:nowrap;display:inline-flex}.nav .ic{height:14px;width:14px}.side nav{display:flex;overflow-x:auto;gap:2px;padding-bottom:4px}.workspace{width:100%}.topbar{height:58px;padding:0 17px}.top-version,.avatar{display:none}.main{padding:19px 13px 45px}.page-head{align-items:flex-start}.page-head h1{font-size:24px}.page-head .right{display:none}.hero{padding:27px 23px;min-height:0}.hero h1{font-size:28px}.hero p{font-size:12px}.hero .light-link{margin:12px 0 0}.cards{gap:8px}.metric{padding:15px 14px;min-height:94px}.metric b{font-size:24px;margin-top:9px}.metric-icon{height:29px;width:29px}.metric-icon .ic{height:16px;width:16px}.metric small{font-size:10px}.panel{padding:18px;margin-bottom:13px}.grid3{grid-template-columns:1fr}.steps-strip{gap:6px;flex-wrap:wrap}.strip-step{font-size:10px}.strip-sep{width:12px}.action-ribbon{align-items:stretch;flex-direction:column}.action-bottom .btn{flex:1}.row{gap:10px}.field{min-width:132px}.total-card{text-align:left}.source-box{padding:13px}.rule-banner{padding:18px}}
+  
+    /* Native anchor navigation: works even if a preview viewer blocks JavaScript. */
+    body:has(section.tab:target) section.tab:not(:target){display:none!important}
+    body:has(section.tab:target) section.tab:target{display:block!important}
+    body:has(section.tab:target) .nav.active{background:transparent;color:#adc2d3;border-color:transparent}
+    body:has(section.tab:target) .nav.active .ic{color:#7894a8}
+    body:has(#request:target) .nav[href="#request"],
+    body:has(#offers:target) .nav[href="#offers"],
+    body:has(#products:target) .nav[href="#products"],
+    body:has(#groups:target) .nav[href="#groups"],
+    body:has(#dictionary:target) .nav[href="#dictionary"],
+    body:has(#settings:target) .nav[href="#settings"]{background:#183859;color:white;border-color:#365679}
+    body:has(#request:target) .nav[href="#request"] .ic,
+    body:has(#offers:target) .nav[href="#offers"] .ic,
+    body:has(#products:target) .nav[href="#products"] .ic,
+    body:has(#groups:target) .nav[href="#groups"] .ic,
+    body:has(#dictionary:target) .nav[href="#dictionary"] .ic,
+    body:has(#settings:target) .nav[href="#settings"] .ic{color:#f7a23a}
+    .nav:focus-visible{outline:2px solid #f7b86d;outline-offset:2px}
+    .scripting-note{margin:12px 0 21px;padding:14px 16px;border-radius:10px;background:#fff7e9;border:1px solid #f3d49c;color:#78531b;font-size:12px;line-height:1.6}
 
-      <main class="content">
-        <section id="price-page" class="page hidden">
-          <h1>Fiyat Listeleri</h1>
-          <div class="grid two-col">
-            <article class="card">
-              <h2>Liste Yükle</h2>
-              <div class="upload-row">
-                <input type="file" id="price-file" accept=".xlsx,.xls,.csv" />
-                <input type="text" id="price-list-name" placeholder="Liste adı" />
-                <button id="preview-price" class="btn warn">Önizle</button>
-              </div>
-              <div class="table-actions">
-                <button id="add-preview-row" class="btn light">Ürün Ekle</button>
-                <button id="remove-preview-row" class="btn danger">Sil</button>
-              </div>
-              <div class="table-wrapper">
-                <table id="price-preview-table">
-                  <thead>
-                    <tr>
-                      <th><input type="checkbox" id="select-all-preview" /></th>
-                      <th>Ürün Kodu</th>
-                      <th>Ürün</th>
-                      <th>Birim Fiyat</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-              <button id="upload-price-list" class="btn primary">Yükle</button>
-            </article>
+    /* Grup ve iskonto yönetimi */
+    .group-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:20px}
+    .group-overview>div{border:1px solid #e3eaef;background:white;border-radius:12px;padding:19px 23px;box-shadow:var(--shadow)}
+    .group-overview span{font-size:11px;color:#788b9c;font-weight:700;display:block}
+    .group-overview strong{display:block;margin-top:6px;font-family:'Plus Jakarta Sans',sans-serif;color:#172f45;font-size:28px}
+    .group-add-form{align-items:flex-end;gap:14px;flex-wrap:wrap}.group-add-form .field:first-child{flex:2;min-width:230px}.group-add-form .discount-field{max-width:220px}
+    .group-add-form>button{min-height:44px}.percent-input{display:flex;align-items:center;position:relative}.percent-input input{padding-right:38px}.percent-input span{position:absolute;right:14px;font-weight:800;color:#5c7f90}
+    .group-message{font-size:12px;line-height:1.65;margin:13px 0 0;color:#5e7b88;border:1px solid #e2ebef;background:#f7fafb;padding:11px 13px;border-radius:8px}
+    .group-message[data-state="success"]{color:#9d5b0a;border-color:#f4d3ab;background:#f0faf6}.group-message[data-state="error"]{color:#b14a3c;border-color:#f1d1ca;background:#fdf5f3}
+    .group-table td{vertical-align:middle}.group-table input{background:#fff;border:1px solid #dae5ea;border-radius:7px;padding:10px 11px;width:100%;min-width:165px}
+    .group-table .group-rate{max-width:124px;min-width:95px;text-align:right}.group-table .group-actions{white-space:nowrap}.group-table .group-actions button{margin-right:5px}
+    .group-table tr:hover{background:#f8fbfc}
+    @media(max-width:720px){.group-overview{gap:8px}.group-overview>div{padding:13px 10px}.group-overview strong{font-size:22px}.group-overview span{font-size:10px}.group-add-form .field{max-width:none!important;min-width:0!important;flex:1 1 100%!important}.group-add-form>button{width:100%}}
+  .audit-import-grid{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin:3px 0 11px}.audit-import-grid>.field{flex:1;min-width:260px}.audit-preview{margin-top:18px}.audit-summary{font-size:12px;font-weight:800;color:#8e560d;background:#fff4e8;border:1px solid #f5d5ae;padding:12px 14px;border-radius:9px;margin-bottom:14px}.audit-preview .tablewrap{max-height:370px;overflow:auto}.audit-preview td{vertical-align:top}.audit-actions{display:flex;align-items:center;justify-content:space-between;gap:17px;margin-top:18px;flex-wrap:wrap}.audit-actions .btn{min-width:240px}.audit-change{display:block;line-height:1.65;margin-bottom:4px;font-size:12px}.audit-change del{color:#a34e45}.audit-change ins{color:#11786e;text-decoration:none;font-weight:800}.audit-warning{color:#b04e3c;font-weight:800}.audit-valid{color:#a95b0d;font-weight:800}
+  .save-indicator{padding:7px 10px;border-radius:7px;font-weight:800;font-size:11px;color:#246b63;background:#fff3e6;display:inline-flex;align-items:center;gap:7px}
+  .save-indicator[data-state="warning"]{background:#fff2df;color:#925a19}
+  .save-indicator[data-state="error"]{background:#fce9e7;color:#ad4037}
+  .save-indicator::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+  .group-static-hint{background:#fff7e8;border:1px solid #e9cc97;border-radius:8px;padding:12px;font-size:12px;color:#83571b}
+.optional-catalog-tools{margin-bottom:18px}.optional-catalog-tools>summary{cursor:pointer;display:list-item;list-style-position:inside;font-size:12px;font-weight:750;color:#698091;border:1px solid #dce6ec;background:white;border-radius:9px;padding:13px 17px}.optional-catalog-tools[open]>summary{margin-bottom:14px;background:#fff3e8;color:#9a5a0f}.optional-catalog-tools>.panel{margin:0}
 
-            <article class="card">
-              <h2>Yüklü Listeler</h2>
-              <div class="table-wrapper">
-                <table id="stored-lists-table">
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th>Yüklenme Tarihi</th>
-                      <th>Liste Adı</th>
-                      <th>Ürün Sayısı</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-              <div class="table-actions">
-                <button id="edit-list" class="btn light">Liste Düzenle</button>
-                <button id="delete-list" class="btn danger">Liste Sil</button>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section id="quote-page" class="page">
-          <div class="header-row">
-            <h1>Teklif Merkezi</h1>
-            <button id="new-quote" class="btn light">Yeni Teklif Oluştur</button>
-          </div>
-
-          <div class="grid top">
-            <article class="card">
-              <h2>Dönüştürücü</h2>
-              <div class="chat-box">
-                <h3>ChatGPT Talep Penceresi</h3>
-                <div id="chat-log" class="chat-log"></div>
-                <div class="chat-row">
-                  <textarea id="chat-input" rows="3" placeholder="Müşteri talebini buraya yapıştırın..."></textarea>
-                  <button id="chat-analyze" class="btn light">Talebi Analiz Et</button>
-                </div>
-              </div>
-              <label><input type="checkbox" id="manual-entry-check" checked /> Metin olarak gir</label>
-              <textarea id="manual-demand" rows="5" placeholder="Örn: 10 adet pprc dirsek 20 mm"></textarea>
-              <div class="file-grid">
-                <label>PDF <input type="file" id="pdf-input" accept=".pdf" /></label>
-                <label>Word <input type="file" id="word-input" accept=".doc,.docx" /></label>
-                <label>Excel <input type="file" id="excel-input" accept=".xls,.xlsx,.csv" /></label>
-                <label>Görsel <input type="file" id="image-input" accept="image/*" /></label>
-              </div>
-              <label>Fiyat Listeleri Seçin</label>
-              <div id="converter-price-lists" class="form-grid"></div>
-              <button id="convert-demand" class="btn success">Dönüştür</button>
-              <small class="muted">Eşleştirme, ürün tipi + ölçü + isim benzerliği kurallarıyla yapılır.</small>
-            </article>
-
-            <article class="card">
-              <h2>Dönüştürme Önizlemesi</h2>
-              <div class="table-actions">
-                <button id="add-convert-row" class="btn light">Ürün Ekle</button>
-                <button id="remove-convert-row" class="btn danger">Ürün Sil</button>
-              </div>
-              <div class="table-wrapper">
-                <table id="converted-table">
-                  <thead>
-                    <tr>
-                      <th><input type="checkbox" id="select-all-converted" /></th>
-                      <th>Ürün Kodu</th>
-                      <th>Ürün</th>
-                      <th>Adet</th>
-                      <th>Birim Fiyat</th>
-                      <th>Kaynak Liste</th>
-                      <th>Alternatifler</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-              <button id="move-to-offer" class="btn warn">Teklif Kısmına Aktar</button>
-            </article>
-          </div>
-
-          <div class="grid bottom">
-            <article class="card">
-              <h2>TEKLİF</h2>
-              <div class="table-wrapper">
-                <table id="offer-table">
-                  <thead>
-                    <tr>
-                      <th>Ürün Kodu</th>
-                      <th>Ürün</th>
-                      <th>Adet</th>
-                      <th>Birim Fiyat</th>
-                      <th>İskonto %</th>
-                      <th>İskontolu Satır</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-              <h3>İndirme Seçenekleri</h3>
-              <div class="download-group">
-                <button class="btn light" data-download="excel">Excel</button>
-                <button class="btn light" data-download="pdf">PDF</button>
-                <button class="btn light" data-download="word">Word</button>
-              </div>
-            </article>
-
-            <article class="card">
-              <h2>Teklif Detayları</h2>
-              <div id="discount-list-selectors"></div>
-              <div class="form-grid">
-                <label>KDV Oranı (%) <input type="number" id="vat-rate" value="20" /></label>
-                <label>Ödeme Seçeneği
-                  <select id="payment-method">
-                    <option value="nakit">Nakit</option>
-                    <option value="kart">Kart</option>
-                    <option value="cek">Çek</option>
-                  </select>
-                </label>
-                <label>Vade Farkı (%) <input type="number" id="maturity-rate" value="0" /></label>
-                <label>Teklif Firması <input type="text" id="company" /></label>
-                <label>Geçerlilik Süresi <input type="text" id="validity" placeholder="Örn: 30 gün" /></label>
-                <label>Açıklama <textarea id="description" rows="4"></textarea></label>
-              </div>
-              <div id="totals" class="totals"></div>
-              <button id="create-offer" class="btn danger">Teklif Ver</button>
-            </article>
-          </div>
-        </section>
-      </main>
+/* Sürüm 3.3 — satır içi onay geri bildirimi ve kesintisiz düzenleme */
+.catalog-review-feedback{font-size:11px;line-height:1.4;margin-top:7px;max-width:260px;white-space:normal;font-weight:750;}
+.catalog-review-feedback[data-state="error"]{color:#ac3f30;background:#fff1ed;border:1px solid #f0c6bc;border-radius:6px;padding:7px}
+.catalog-review-feedback[data-state="ok"]{color:#a65a08;background:#fff1e6;border-radius:6px;padding:7px}
+.catalog-review-feedback:empty{display:none}
+.catalog-current-status{display:block;margin-bottom:5px}
+.catalog-risk-reasons:empty{display:none}
+/* Sürüm 3.3 — ayrı, düzenlenebilir ve sayfalanabilir riskli ürün önizlemesi */
+.catalog-review-panel{border:1px solid #dfe9ec;background:white;border-radius:12px;padding:15px;margin:16px 0}
+.catalog-review-panel.attention{border-color:#eccfaf;background:#fffdf9}
+.catalog-review-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 12px}
+.catalog-review-heading h3{font-size:14px;margin:0 0 6px;color:#17374b;display:flex;gap:8px;align-items:center}
+.catalog-review-heading p{font-size:11px;color:#6a8392;margin:0;line-height:1.5}
+.catalog-dot{height:10px;width:10px;display:inline-block;border-radius:100%;flex-shrink:0}
+.catalog-dot.safe{background:#e18117}.catalog-dot.risky{background:#d98637}
+.catalog-count{font-size:11px;padding:3px 7px;background:#edf4f6;color:#4a7183;border-radius:12px}
+.catalog-pager{display:flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap;font-size:11px;color:#647d8b}
+.catalog-pager button{background:white;border:1px solid #d5e1e7;padding:6px 9px;border-radius:6px;color:#264f66;cursor:pointer}
+.catalog-pager button:disabled{opacity:.35;cursor:not-allowed}
+.catalog-import-table input,.catalog-import-table select{background:white;min-width:95px;width:100%;padding:8px 9px;border:1px solid #d7e2e8;border-radius:6px;font-size:11px}
+.catalog-import-table td{vertical-align:top;font-size:11px}
+.catalog-import-table .catalog-risk-source{max-width:260px;white-space:normal;overflow-wrap:anywhere;line-height:1.45;margin-top:6px;border-top:1px dashed #efd8c5;padding-top:6px;color:#6b7a85}
+.catalog-import-table .catalog-risk-reason{color:#aa4b37;font-size:10px;line-height:1.5;max-width:240px}
+.catalog-import-table .catalog-risk-reason span{display:block;margin:3px 0}
+.catalog-import-table .catalog-review-check{display:flex;gap:7px;align-items:flex-start;white-space:normal;min-width:130px;font-size:11px;font-weight:700;color:#326c5e}
+.catalog-import-table .catalog-review-check input{min-width:0;width:auto;flex-shrink:0;margin:2px 0 0}
+.catalog-import-table .catalog-exclude{margin-top:9px;font-size:10px;color:#924f48;border:0;background:transparent;cursor:pointer;text-decoration:underline}
+.catalog-import-table tr.catalog-imported{opacity:.65;background:#f1f7f6}
+@media(max-width:720px){.catalog-review-heading{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <symbol id="ico-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></symbol>
+  <symbol id="ico-fileplus" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M12 12v6m-3-3h6"/></symbol>
+  <symbol id="ico-box" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 14h3"/></symbol>
+  <symbol id="ico-percent" viewBox="0 0 24 24"><path d="m19 5-14 14"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></symbol>
+  <symbol id="ico-brain" viewBox="0 0 24 24"><path d="M12 18V5a3 3 0 0 0-5.5-1.6A4.5 4.5 0 0 0 3 11a4 4 0 0 0 3 6.8A3.5 3.5 0 0 0 12 20M12 18V5a3 3 0 0 1 5.5-1.6A4.5 4.5 0 0 1 21 11a4 4 0 0 1-3 6.8A3.5 3.5 0 0 1 12 20"/><path d="M7 9c3 0 3 3 5 3m5-3c-3 0-3 3-5 3"/></symbol>
+  <symbol id="ico-files" viewBox="0 0 24 24"><path d="M16 2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Z"/><path d="M8 22h10a2 2 0 0 0 2-2V8"/><path d="M8 7h6m-6 4h6"/></symbol>
+  <symbol id="ico-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06-2 2-.06-.06A1.65 1.65 0 0 0 16 18.5a1.65 1.65 0 0 0-1 1.5v.5h-3v-.5a1.65 1.65 0 0 0-1-1.5 1.65 1.65 0 0 0-1.82.33l-.06.06-2-2 .06-.06A1.65 1.65 0 0 0 7.5 15a1.65 1.65 0 0 0-1.5-1H5.5v-3H6a1.65 1.65 0 0 0 1.5-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06 2-2 .06.06A1.65 1.65 0 0 0 11 6.5 1.65 1.65 0 0 0 12 5V4.5h3V5a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.82-.33l.06-.06 2 2-.06.06A1.65 1.65 0 0 0 19.5 10a1.65 1.65 0 0 0 1.5 1h.5v3H21a1.65 1.65 0 0 0-1.6 1Z" transform="translate(-1.5 -1.5) scale(1.12)"/></symbol>
+  <symbol id="ico-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+  <symbol id="ico-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="ico-upload" viewBox="0 0 24 24"><path d="M12 16V4m-5 5 5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="ico-spark" viewBox="0 0 24 24"><path d="m12 3 1.9 6.1L20 11l-6.1 1.9L12 19l-1.9-6.1L4 11l6.1-1.9L12 3Zm7 14 .7 2.3L22 20l-2.3.7L19 23l-.7-2.3L16 20l2.3-.7L19 17Z"/></symbol>
+  <symbol id="ico-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="ico-document" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8m-8 4h8"/></symbol>
+  <symbol id="ico-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="7"/><path d="m16 16 5 5"/></symbol>
+  <symbol id="ico-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="ico-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M5 18v3h14v-3"/></symbol>
+  <symbol id="ico-circles" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+  <symbol id="ico-edit" viewBox="0 0 24 24"><path d="m14 5 5 5M4 20l4.6-.9L20 7.6A2.1 2.1 0 0 0 17 4.6L5.5 16 4 20Z"/></symbol>
+  <symbol id="ico-tag" viewBox="0 0 24 24"><path d="M20 12 12 20a2 2 0 0 1-3 0l-6-6V4h10l7 7a2 2 0 0 1 0 1Z"/><circle cx="8" cy="9" r="1"/></symbol>
+  <symbol id="ico-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+</svg>
+<div class="shell">
+<aside class="side">
+  <div class="brand"><div class="brand-mark" aria-hidden="true">T</div><div class="brand-label"><strong>TEKLİF</strong><span>MERKEZİ · ORTAK ÇALIŞMA</span></div></div>
+  <nav aria-label="Ana menü">
+    <div class="side-heading">ÇALIŞMA ALANI</div>
+    <a class="nav active" data-tab="request" href="#request"><svg class="ic"><use href="#ico-fileplus"/></svg> Yeni Teklif</a>
+    <a class="nav" data-tab="offers" href="#offers"><svg class="ic"><use href="#ico-files"/></svg> Kayıtlı Teklifler</a>
+    <div class="side-heading" style="margin-top:28px">VERİ YÖNETİMİ</div>
+    <a class="nav" data-tab="products" href="#products"><svg class="ic"><use href="#ico-box"/></svg> Ürün &amp; Fiyat Listeleri</a>
+    <a class="nav" data-tab="groups" href="#groups"><svg class="ic"><use href="#ico-percent"/></svg> Ürün Grupları ve İskontolar</a>
+    <a class="nav" data-tab="dictionary" href="#dictionary"><svg class="ic"><use href="#ico-brain"/></svg> Ürün Sözlüğü</a>
+    <div class="side-heading" style="margin-top:28px">SİSTEM</div>
+    <a class="nav" data-tab="settings" href="#settings"><svg class="ic"><use href="#ico-settings"/></svg> Ayarlar &amp; Yedekleme</a>
+  </nav>
+  <div class="side-bottom"><div class="side-status"><div class="status-top"><span class="status-dot"></span> Ortak bulut çalışma alanı</div><p>Bu sürüm ortak kayıt mantığıyla çalışır. Yetkili kullanıcılar aynı internet adresinde aynı ürün, fiyat ve teklif verilerini görür.</p></div><div class="side-footer">Ortak Teklif Yönetimi v3.8</div></div>
+</aside>
+<div class="workspace">
+<header class="topbar"><div class="breadcrumb"><span>Çalışma Alanı</span><span class="slash">/</span><strong id="crumbName">Yeni Teklif</strong></div><div class="top-actions"><span id="saveIndicator" class="save-indicator" data-state="warning" role="status">Ortak kayıt kontrol ediliyor…</span><button class="btn secondary small" id="refreshSharedButton" type="button" onclick="refreshSharedData(true)" title="Diğer kullanıcıların değişikliklerini getir" style="display:none">↻ Ortak veriyi yenile</button><span class="top-version">TEKLİF · TİCARİ OPERASYONLAR</span><button class="btn small" onclick="newQuote()"><svg class="ic"><use href="#ico-plus"/></svg> Yeni Teklif</button><div class="avatar">T</div></div></header>
+<main class="main">
+<noscript><div class="scripting-note"><strong>Önizleme modu:</strong> Menü bağlantıları açılabilir, ancak katalog yükleme, fiyat hesaplama ve teklif çıktısı için JavaScript gerekir. Dosyayı ChatGPT önizlemesi yerine Safari / Chrome üzerinden veya bir web sunucusunda açın.</div></noscript>
+<section id="request" class="tab">
+  <div class="page-head"><div><span class="eyebrow">TEKLİF OLUŞTURMA</span><h1>Yeni Teklif</h1><p class="sub">Müşteri talebini yükleyin, eşleşmeleri kontrol edin ve teklifinizi hazırlayın.</p></div><div class="right"><span class="pill">Excel · PDF · Görsel · Metin</span></div></div>
+  <div class="steps-strip" aria-label="Teklif adımları"><div class="strip-step is-active"><span class="n">1</span> Talebi al</div><div class="strip-sep"></div><div class="strip-step"><span class="n">2</span> Ürünleri eşleştir</div><div class="strip-sep"></div><div class="strip-step"><span class="n">3</span> Teklif oluştur</div></div>
+  <div class="panel">
+    <div class="panel-header"><div class="panel-title-row"><span class="serial">01</span><div><h2>Müşteri ve talep bilgileri</h2><p>Talebin geldiği firma ve teklif detayları</p></div></div></div>
+    <div class="grid3 form-line"><div><label for="customer">Müşteri / firma adı</label><input id="customer" placeholder="Örn. ABC İnşaat A.Ş."></div><div><label for="offerDate">Teklif tarihi</label><input id="offerDate" type="date"></div><div><label for="currency">Para birimi</label><select id="currency"><option>TRY</option><option>USD</option><option>EUR</option></select></div></div>
+    <div class="source-grid">
+      <div class="source-box"><div class="source-title"><svg class="ic"><use href="#ico-upload"/></svg> Dosyadan talep al</div><div class="drop" id="requestDrop"><div class="drop-icon"><svg class="ic big"><use href="#ico-upload"/></svg></div><strong>Dosyanızı buraya sürükleyin</strong><span>veya seçmek için tıklayın<br>Excel · PDF · PNG · JPG · CSV</span><input aria-label="Talep dosyası yükle" id="requestFile" type="file" accept=".xlsx,.xls,.csv,.pdf,.png,.jpg,.jpeg,.webp"><span id="chosenFile" class="file-chosen"></span></div></div>
+      <div class="source-box"><div class="source-title"><svg class="ic"><use href="#ico-edit"/></svg> Metin olarak talep gir</div><textarea id="requestText" aria-label="Müşterinin ürün talepleri" placeholder="50 adet 50x500 PVC boru&#10;50x500 PVC 50 tane&#10;200 metre 100'lük pimaş"></textarea></div>
     </div>
+    <div class="action-ribbon"><div><p class="hint">Miktar hem başta hem sonda okunur: “50 adet 50x500 PVC boru” = “50x500 PVC 50 tane”. 50x500 ölçüsü 50 adet anlamına gelmez. Fotoğraf ve PDF sonuçlarını kontrol edin.</p><span class="processing-status" id="readStatus"></span></div><button class="btn large" id="parseBtn" onclick="parseRequest()"><svg class="ic"><use href="#ico-spark"/></svg> Talebi işle ve eşleştir <svg class="ic"><use href="#ico-arrow"/></svg></button></div>
+  </div>
+  <div class="panel" id="resultsPanel">
+    <div class="panel-header"><div class="panel-title-row"><span class="serial">02</span><div><h2>Eşleştirilen ürünler</h2><p>Stok kodlarını, birimleri, fiyatları ve iskontoları kontrol edin.</p></div></div><button class="btn outline small" onclick="addOfferLine()"><svg class="ic small"><use href="#ico-plus"/></svg> Satır ekle</button></div>
+    <div class="tablewrap"><table><thead><tr><th>Gelen talep</th><th>Eşleşen ürün</th><th>Fiyat listesi</th><th>Miktar</th><th>Liste fiyatı</th><th>İskonto</th><th>Net birim</th><th>Satır toplamı</th><th>Eşleşme</th><th></th></tr></thead><tbody id="offerLines"></tbody></table></div>
+    <p class="hint">Sarı etiketli sonuçlar kontrol gerektirir. Ürün seçimini veya fiyatı değiştirebilirsiniz.</p>
+    <div class="offer-finish"><div><label for="offerNote">Teklif notları ve satış koşulları</label><input id="offerNote" value="Fiyatlar KDV hariçtir." placeholder="Teslimat ve satış koşullarını yazın..."><p class="hint">Teklifi müşteriye göndermeden önce kapsamı, KDV'yi ve satış koşullarını doğrulayın.</p></div><div class="total-card"><small>KDV HARİÇ TEKLİF TUTARI</small><div class="total" id="grandTotal">₺0,00</div></div></div>
+    <div style="margin:15px 0;padding:12px;background:#fff5e8;border:1px solid #ebc997;border-radius:8px"><label class="catalog-checkbox"><input type="checkbox" id="confirmQuotePrices"> Teklifteki ürün adlarını, ölçüleri, PP/PVC gruplarını ve fiyatları orijinal fiyat listesinden kontrol ettim.</label></div><div class="action-bottom"><button class="btn outline" onclick="saveOffer()"><svg class="ic"><use href="#ico-check"/></svg> Teklifi kaydet</button><button class="btn secondary" onclick="exportExcel()"><svg class="ic"><use href="#ico-download"/></svg> Excel indir</button><button class="btn orange" onclick="exportPDF()"><svg class="ic"><use href="#ico-download"/></svg> PDF indir</button></div>
+  </div>
+</section>
 
-    <script src="app.js"></script>
-  </body>
-</html>
+<section id="products" class="tab hidden">
+  <div class="page-head"><div><span class="eyebrow">KATALOG YÖNETİMİ</span><h1>Ürün ve Fiyat Listeleri</h1><p class="sub">Kataloğu yükleyin, koli sayılarını ve fiyatları ayrı tutarak ürünleri aktarın.</p></div><div class="right"><button class="btn" onclick="document.getElementById('importList').focus()"><svg class="ic"><use href="#ico-upload"/></svg> Liste yükle</button></div></div>
+  <div class="catalog-intro"><div class="inline-icon"><svg class="ic"><use href="#ico-shield"/></svg></div><div><strong>Fiyatlar doğrulanmadan müşteriye teklif çıkarmayın.</strong><p>Sistem sadece eklediğiniz fiyat listelerinden ürün ve fiyat alır. Ürün kodu ve ölçü eşleşmelerini teklif öncesinde kontrol edin.</p></div></div>
+  <div class="panel"><div class="panel-header"><div class="panel-title-row"><span class="serial">01</span><div><h2>Katalog veya fiyat listesi ekle</h2><p>Dosyayı seçin, ürünleri önizleyin ve güvenilir satırları kaydedin.</p></div></div></div>
+    <div class="grid3 form-line"><div><label for="importList">Liste adı</label><input id="importList" placeholder="Örn. PVC-U Haziran 2026"></div><div><label for="importGroup">Varsayılan ürün grubu</label><select id="importGroup"></select></div><div><label for="catalogFile">Fiyat listesi dosyası</label><input id="catalogFile" type="file" accept=".xlsx,.xls,.csv,.pdf"></div></div>
+    <div class="row space"><p class="hint" style="max-width:700px;margin:0">Bu beş grup Ürün Grupları ve İskontolar bölümündekilerle aynıdır. PP-R, PVC-U, Sessiz Boru gibi alt başlıklar ürün tanımında korunur. Koli miktarı ürün adından ayrı tutulur; fiyat yalnızca fiyat alanından alınır.</p><button id="catalogParseBtn" class="btn" onclick="importCatalog()"><svg class="ic"><use href="#ico-upload"/></svg> Dosyayı oku ve önizle</button></div>
+    <p id="catalogStatus" class="catalog-status" role="status" aria-live="polite"></p>
+    <div id="catalogPreview" class="catalog-preview hidden">
+      <div class="row space" style="align-items:center;margin-bottom:9px"><div><strong id="catalogPreviewHeadline" style="display:block;color:#153952;font-size:15px"></strong><p class="hint" id="catalogPreviewHelp" style="margin:6px 0 0"></p></div><button class="btn outline small" onclick="downloadCatalogPreview()">İsteğe bağlı: Excel indir</button></div>
+      <div class="catalog-review-panel"><div class="catalog-review-heading"><div><h3><span class="catalog-dot safe"></span> Doğrudan aktarılabilir ürünler <span id="catalogSafeCount" class="catalog-count"></span></h3><p>Hata saptanmayan satırlar. İsterseniz aktarılmadan önce burada da düzenleyebilirsiniz.</p></div><div id="catalogSafePager" class="catalog-pager"></div></div>
+      <div class="tablewrap"><table class="catalog-import-table"><thead><tr><th>PDF sayfası</th><th>Stok kodu</th><th>Ürün üst başlığı</th><th>Ürün adı</th><th>Fiyat</th><th>Koli adedi</th><th>Durum</th></tr></thead><tbody id="catalogPreviewRows"></tbody></table></div></div>
+      <div class="catalog-review-panel attention"><div class="catalog-review-heading"><div><h3><span class="catalog-dot risky"></span> Düzenleme gerektiren riskli satırlar <span id="catalogRiskCount" class="catalog-count"></span></h3><p>PDF satırını ve uyarı nedenini kontrol edin. Stok kodu, ürün adı, üst başlık, grup, fiyat ve koli adedini düzeltin. Ardından satırı onaylayın.</p></div><div id="catalogRiskPager" class="catalog-pager"></div></div>
+      <div class="tablewrap"><table class="catalog-import-table"><thead><tr><th>Kaynak</th><th>Stok kodu</th><th>Üst başlık / klasör</th><th>Ürün adı</th><th>Grup</th><th>Fiyat</th><th>Koli</th><th>Uyarı / ham satır</th><th>Kontrol</th></tr></thead><tbody id="catalogRiskRows"></tbody></table></div><p class="hint">Onay verdiğiniz ürünler bir sonraki kayıtta eklenir. Fiyatı belirsiz ürünlerde boş bırakılan fiyat 0 TL olarak yorumlanmaz. İsterseniz hatalı satırı <b>Hariç tut</b> olarak işaretleyebilirsiniz.</p></div>
+      <p class="hint" id="catalogEmptyHint" style="color:#a46421;margin:13px 0"></p>
+      <details style="margin:14px 0"><summary style="cursor:pointer;font-size:12px;font-weight:800">Okuma uyarıları ve ham PDF örnekleri</summary><pre id="catalogWarnings" class="catalog-debug"></pre><pre id="catalogRawSample" class="catalog-debug"></pre></details>
+      <div class="row space" style="flex-wrap:wrap;align-items:center"><div><label class="catalog-checkbox"><input id="allowMissingPrice" type="checkbox" checked onchange="renderCatalogPreview()"> Fiyat sütunu olmayan ürünleri “Fiyat girilmedi” olarak ekle (fiyat 0 TL olmaz)</label><label class="catalog-checkbox" style="margin-top:8px"><input id="allowExistingUpdates" type="checkbox"> Mevcut ürün ve fiyatlarını güncelle (varsayılan: kapalı)</label><p class="hint" style="margin:9px 0 0">Riskli satırları alt tabloda düzenleyip onaylayabilirsiniz. Onaysız satırlar kaydedilmez. Excel kontrolü zorunlu değildir; fiyatları mutlaka kaynağından doğrulayın.</p></div><button id="catalogImportConfirm" class="btn" onclick="confirmCatalogImport()">Hazır ve onaylı ürünleri kataloğa aktar</button></div>
+    </div>
+  </div>
+  <details class="optional-catalog-tools"><summary>İsteğe bağlı: tek ürün ekleme / düzenleme</summary><div class="panel"><div class="panel-header"><div class="panel-title-row"><span class="serial">02</span><div><h2>Tekil ürün ekle / düzenle</h2><p>Manuel fiyat veya ürün kodu tanımlayın.</p></div></div></div>
+    <input type="hidden" id="editProduct"><div class="grid3 form-line"><div><label>Stok kodu</label><input id="pCode" placeholder="3391-..."></div><div><label>Ürün adı</label><input id="pName" placeholder="PVC-U 87° Dirsek 100 mm"></div><div><label>Ürün grubu</label><select id="pGroup"></select></div></div>
+    <div class="grid3 form-line"><div><label>Fiyat listesi</label><input id="pList" placeholder="PVC-U 2026"></div><div><label>Liste fiyatı</label><input id="pPrice" type="number" min="0" step="any" placeholder="Fiyat girilmedi"></div><div><label>Birim</label><select id="pUnit"><option>adet</option><option>metre</option><option>boy</option><option>paket</option><option>takım</option><option>kg</option></select></div></div>
+    <div class="row" style="margin-bottom:14px"><div class="field" style="min-width:250px;max-width:440px"><label for="pSection">Katalog üst başlığı (alt ürünlerin klasörü)</label><input id="pSection" placeholder="Örn. PVC-U BORU / KAPALI DİRSEK"></div></div><div class="row"><button class="btn" onclick="saveProduct()"><svg class="ic"><use href="#ico-check"/></svg> Ürünü kaydet</button><button class="btn secondary" onclick="resetProduct()">Temizle</button></div>
+  </div>
+  </details><div class="panel"><div class="panel-header"><div class="panel-title-row"><span class="serial">03</span><div><h2>Ürün kataloğu</h2><p>PDF üst başlığına göre alt ürünleri açın. Kayıtlar otomatik değiştirilmez; şüpheli satırları inceleyin.</p></div></div><div style="max-width:260px;width:100%"><input id="productSearch" oninput="renderProducts()" placeholder="Başlık, ürün veya kod ara..."></div></div><div class="catalog-folder-list" id="productFolders" aria-label="Başlıklara göre ürün kataloğu"><p class="empty">Henüz ürün yok.</p></div><div style="margin-top:18px"><button class="btn outline small" onclick="downloadCatalogAudit()">Ürün / grup / fiyat denetim Excel'i</button><p class="catalog-clean-note">Dosyadaki hataları kaynak fiyat listesiyle düzeltin. Değişecek satırın <b>İşlem</b> sütununa <b>DÜZELT</b>, <b>Kaynak kontrolü</b> sütununa <b>DOĞRULANDI</b> yazın. <b>Kayıt ID</b> ve <b>Kayıt İmzası</b> sütunlarına dokunmayın.</p><p id="catalogCleanStatus" class="catalog-status" role="status" aria-live="polite"></p></div></div>
+  <details class="optional-catalog-tools"><summary>Gelişmiş seçenek: eski kontrol Excel’iyle toplu düzeltme</summary><div class="panel"><div class="panel-header"><div class="panel-title-row"><span class="serial">04</span><div><h2>Düzeltilmiş denetim Excel'ini geri yükle</h2><p>Mevcut katalogdaki ürünleri Kayıt ID ile eşleştirir; hatalı fiyat ve grupları otomatik tahmin etmez.</p></div></div></div>
+    <div class="audit-import-grid"><div class="field"><label for="auditFile">Düzenlenmiş Urun_Grup_Fiyat_Denetimi.xlsx</label><input id="auditFile" type="file" accept=".xlsx,.xls" onchange="clearAuditPreview()"></div><button class="btn secondary" onclick="previewAuditCorrections()" type="button">Değişiklikleri karşılaştır</button></div>
+    <p class="hint">Yalnızca bu sürümden indirilen, <b>Kayıt ID</b> içeren denetim dosyası kullanılabilir. Önceki sürümün dosyalarını bu araçla güncellemeyin. Yeni ürün eklemek için yukarıdaki <b>Tekil ürün ekle</b> alanını kullanın.</p>
+    <p id="auditStatus" class="catalog-status" role="status" aria-live="polite"></p>
+    <div id="auditPreview" class="hidden audit-preview"><div id="auditSummary" class="audit-summary"></div><div class="tablewrap"><table><thead><tr><th>Ürün / stok kodu</th><th>Değişiklik</th><th>Durum</th></tr></thead><tbody id="auditRows"></tbody></table></div><div class="audit-actions"><label class="catalog-checkbox"><input type="checkbox" id="auditAcknowledge" onchange="auditUpdateApplyState()"> Listede gösterilen değişiklikleri orijinal fiyat listesinden kontrol ettim.</label><button id="auditApply" class="btn" type="button" onclick="applyAuditCorrections()" disabled>Kontrol edilen düzeltmeleri kaydet</button></div><p class="hint">Kaydetmeden önce tüm verilerin JSON yedeği indirilir. Uyuşmayan ürün grubu veya tekrarlanan stok kodu varsa toplu güncelleme yapılmaz.</p></div>
+  </div>
+  </details><div class="panel"><div class="panel-header"><div class="panel-title-row"><span class="serial">05</span><div><h2>Yüklenmiş kataloğu topluca sil</h2><p>Örneğin “Plastik” listesini seçip içindeki bütün ürünleri tek işlemde kaldırın.</p></div></div></div><div class="catalog-manager"><div class="field"><label for="deleteCatalogSelect">Silinecek katalog / fiyat listesi</label><select id="deleteCatalogSelect" onchange="updateCatalogDeleteSummary()"><option value="">Önce bir katalog seçin</option></select></div><button type="button" class="btn red" id="deleteCatalogBtn" onclick="deleteEntireCatalog()" disabled>Seçili kataloğu sil</button></div><p id="deleteCatalogSummary" class="catalog-status" role="status" aria-live="polite">Henüz silinecek katalog seçilmedi.</p><p class="hint">Bu işlem yalnızca seçilen kataloğa ait ürünleri siler. Diğer kataloglar, beş ortak ürün grubu, iskonto oranları ve kayıtlı teklifler korunur.</p></div>
+</section>
+
+<section id="groups" class="tab hidden"><div class="page-head"><div><span class="eyebrow">ÜRÜN GRUPLARI & FİYATLANDIRMA</span><h1>Ürün Grupları ve İskontolar</h1><p class="sub">Katalog yüklemede kullanılan aynı beş ürün grubuna iskonto oranı tanımlayın.</p></div></div>
+  <div class="group-overview" aria-label="Grup özeti">
+    <div><span>Toplam ürün grubu</span><strong id="groupCount">0</strong></div>
+    <div><span>İskonto tanımlı</span><strong id="discountedCount">0</strong></div>
+    <div><span>Gruba bağlı ürün</span><strong id="groupProductCount">0</strong></div>
+  </div>
+  <div class="panel"><div class="panel-header"><div class="panel-title-row"><span class="serial">01</span><div><h2>Beş ürün grubunun iskonto oranları</h2><p>Katalog yüklerken seçtiğiniz ürün grupları burada da aynıdır. Her grup için tek iskonto oranı geçerlidir.</p></div></div></div>
+    <div class="tablewrap"><table class="group-table"><thead><tr><th>Ürün grubu / Varsayılan ürün grubu</th><th>İskonto (%)</th><th>Bağlı ürün</th><th>İşlem</th></tr></thead><tbody id="groupRows"><tr><td colspan="4">Gruplar yükleniyor…</td></tr></tbody></table></div>
+    <p id="groupMessage" class="group-message" role="status" aria-live="polite">Plastik, Metal, Altyapı Sistemleri, Radyatör ve Diğer grupları katalog içe aktarma ile bağlantılıdır.</p>
+    <p class="hint">Yeni grup oluşturma veya ad değiştirme yoktur. Eski PP-R, PVC-U, Sessiz Boru gibi ayrıntılar ürün adında ve katalog başlığında kalır. Eski ayrıntılı iskonto oranları yedekte korunur; yeni beş kategori için oranları kontrol edin.</p>
+    <details id="legacyGroupDetails" class="optional-catalog-tools hidden"><summary>Önceki ayrıntılı iskonto oranlarını göster (bilgi amaçlı)</summary><div class="tablewrap"><table><thead><tr><th>Önceki grup</th><th>Eski iskonto</th><th>Yeni ortak grup</th></tr></thead><tbody id="legacyGroupRows"></tbody></table></div><p class="hint">Bu eski oranlar beş grup için otomatik olarak birleştirilmedi; yanlış iskonto uygulanmasını önlemek için istediğiniz yeni oranları yukarıdaki tabloda kaydedin.</p></details>
+  </div>
+  <div class="panel"><div class="panel-header"><div class="panel-title-row"><span class="serial">03</span><div><h2>Açık teklife grup iskontolarını uygula</h2><p>Yeni tanımladığınız iskonto oranlarını ekranda açık olan teklifin tüm eşleşmiş ürünlerine yeniden uygular.</p></div></div></div>
+    <div class="row space"><p class="hint" style="margin:0;max-width:680px">Bu işlem teklifteki elle değiştirilmiş satır iskontolarını da grup oranıyla değiştirir. Kayıtlı teklifler kendiliğinden güncellenmez.</p><button type="button" class="btn secondary" onclick="applyDiscountsToCurrentQuote()">Açık teklife uygula</button></div>
+  </div>
+</section>
+
+<section id="dictionary" class="tab hidden"><div class="page-head"><div><span class="eyebrow">AKILLI ÜRÜN TANIMA</span><h1>Öğretilebilir Ürün Sözlüğü</h1><p class="sub">Müşterinin kullandığı terimleri katalogdaki ürün ifadeleriyle eşleştirin.</p></div></div>
+  <div class="rule-banner"><div><h3>Sektörün dilini sisteme öğretin.</h3><p>“Pimaş”, “kapalı dirsek” gibi yaygın veya firmaya özel ifadeleri tanımlayın. Yerel eşleştirme algoritması yeni tekliflerde bu kuralları kullanır.</p></div><svg class="ic"><use href="#ico-brain"/></svg></div>
+  <div class="panel"><div class="panel-header"><div class="panel-title-row"><span class="serial">01</span><div><h2>Yeni ifade öğret</h2><p>Argo, kısaltma, eski ürün adı veya eş anlamlı ifadeler</p></div></div></div><div class="row"><div class="field"><label>Müşterinin yazdığı ifade</label><input id="dPhrase" placeholder="Örn. pimaş"></div><div class="field"><label>Sistemin anlayacağı terim</label><input id="dTarget" placeholder="Örn. PVC-U boru"></div><button class="btn" onclick="addTerm()"><svg class="ic"><use href="#ico-plus"/></svg> Sözlüğe ekle</button></div><div class="dictionary-visual"><span>kapalı dirsek</span><span class="arrow"><svg class="ic"><use href="#ico-arrow"/></svg></span><span>87 derece dirsek</span></div><p class="hint">Bu terimler otomatik ürün seçimine yardımcı olur; nihai kod, çap ve fiyat eşleşmesi onaylanmalıdır.</p></div>
+  <div class="panel"><div class="panel-header"><div class="panel-title-row"><span class="serial">02</span><div><h2>Tanımlı terimler</h2><p>İfadeleri dilediğiniz zaman güncelleyebilir veya silebilirsiniz.</p></div></div></div><div class="tablewrap"><table><thead><tr><th>Müşteri ifadesi</th><th>Sistem karşılığı</th><th>İşlem</th></tr></thead><tbody id="dictRows"></tbody></table></div></div>
+</section>
+
+<section id="offers" class="tab hidden"><div class="page-head"><div><span class="eyebrow">TEKLİF ARŞİVİ</span><h1>Kayıtlı Teklifler</h1><p class="sub">Daha önce hazırlanan teklifleri bulun, açın ve güncelleyin.</p></div><div class="right"><button class="btn" onclick="newQuote()"><svg class="ic"><use href="#ico-plus"/></svg> Yeni teklif</button></div></div>
+  <div class="panel"><div class="panel-header"><div class="panel-title-row"><span class="serial"><svg class="ic small"><use href="#ico-files"/></svg></span><div><h2>Teklif geçmişi</h2><p>Bu tarayıcıda kayıtlı teklifleriniz listelenir.</p></div></div></div><div class="tablewrap"><table><thead><tr><th>Teklif tarihi</th><th>Müşteri / firma</th><th>Kalem sayısı</th><th>Teklif tutarı</th><th>İşlem</th></tr></thead><tbody id="savedRows"></tbody></table></div></div>
+</section>
+
+<section id="settings" class="tab hidden"><div class="page-head"><div><span class="eyebrow">SİSTEM YÖNETİMİ</span><h1>Ayarlar ve Yedekleme</h1><p class="sub">Ürün kataloğunuzu, eşleştirme kurallarınızı ve teklif geçmişinizi koruyun.</p></div></div>
+  <div class="panel"><div class="panel-header"><div class="panel-title-row"><span class="serial"><svg class="ic small"><use href="#ico-shield"/></svg></span><div><h2>Veri yedekleme</h2><p>Ürün, grup, sözlük ve teklifler ortak sunucuda tutulur. JSON dosyasıyla mevcut kayıtlarınızı da aktarabilirsiniz.</p></div></div></div><div class="row"><button class="btn" onclick="backup()"><svg class="ic"><use href="#ico-download"/></svg> Tüm verileri indir (JSON)</button><div class="field" style="max-width:270px"><label for="restoreFile">Yedek dosyasından geri yükle</label><input id="restoreFile" type="file" accept=".json" onchange="restoreData(event)"></div></div><p class="hint">Ortak sunucu kullanıldığında kayıtlar sunucu veritabanındadır. Şirket verilerini ayrıca JSON olarak yedekleyin. Önceki cihazınızın kayıtlarını aktaracaksanız mevcut verilerin yedeğini alın ve JSON geri yükleme alanını kullanın.</p><div class="row" style="margin-top:14px"><button class="btn secondary" type="button" onclick="restorePreviousServerBackup()">Sunucudaki önceki kaydı incele / geri yükle</button><span class="hint">Yalnızca yerel sunucuda önceki kayıt yedeği varsa çalışır.</span></div></div>
+  <div class="setting-note"><strong>Bu sürüm hakkında</strong><p style="margin:8px 0 0">Bu sürüm tek bir tarayıcıda çalışan bir prototiptir; ortak sunucu, kullanıcı hesapları veya çevrimiçi yapay zekâ servisi içermez. Excel/PDF/OCR kitaplıkları için internet gerekir. Fiyat, iskonto ve eşleştirmeler ticari kullanım öncesinde doğrulanmalıdır.</p></div>
+</section>
+<div class="footer">Akıllı Teklif Merkezi · Şifreli ortak çalışma · Ürün, fiyat ve teklifler ortak veritabanına kaydedilir.</div>
+</main>
+</div></div>
+<script>
+
+const CATALOG_CATEGORIES=['Plastik','Metal','Altyapı Sistemleri','Radyatör','Diğer'];
+const KEY='kalde-quote-v1';
+const defaultGroups=CATALOG_CATEGORIES.map((name,i)=>({id:['cat-plastik','cat-metal','cat-altyapi','cat-radyator','cat-diger'][i],name,discount:0}));
+function groupIdForCategory(category){return defaultGroups.find(g=>g.name===category)?.id||defaultGroups[4].id;}
+// Legacy product family labels are used only once to migrate old saved records.
+// They NEVER reappear as independent discount groups.
+function legacyGroupCategory(name){
+ const n=norm(name);
+ if(/\b(?:radyator|radiator|panel radiator)\b/.test(n))return 'Radyatör';
+ if(/\b(?:koruge|altyapi|pe boru|pe 100|sulama|elektrik tesisat|elektrik boru)\b/.test(n))return 'Altyapı Sistemleri';
+ if(/\b(?:metal|dogalgaz|gaz vana|inflex|kollektor|kuresel vana)\b/.test(n))return 'Metal';
+ if(/\b(?:pvc|pp r|ppr|pprc|sessiz|mute|pex|pe rt|pe x|plastik|fr pvc)\b/.test(n))return 'Plastik';
+ return 'Diğer';
+}
+const seed={products:[],groups:defaultGroups,dictionary:[{id:'d1',phrase:'pimaş',target:'pvc-u boru'},{id:'d2',phrase:'pimas',target:'pvc-u boru'},{id:'d3',phrase:'kapalı dirsek',target:'87 derece dirsek'}],offers:[]};
+let db;
+try{db=JSON.parse(localStorage.getItem(KEY))||structuredClone(seed)}catch{db=structuredClone(seed)}
+let lines=[];let currentOfferId=null;const $=id=>document.getElementById(id);const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+let storageFailure=false, serverEnabled=false, serverQueue=Promise.resolve();
+let sharedRevision=null,sharedBusy=false,sharedConflict=false,remoteVersionWaiting=null;
+let sharedRefreshTimer=null;
+function sharedEligibleForAutoRefresh(){
+ const active=document.activeElement;
+ if(active&&/^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName))return false;
+ if(typeof pendingCatalog!=='undefined'&&pendingCatalog?.rows?.some(r=>!r.imported&&!r.excluded))return false;
+ if(document.querySelector('#request:not(.hidden)')&&lines.length)return false;
+ return !sharedConflict&&!sharedBusy;
+}
+function setSharedRefreshButton(show, caption='↻ Ortak veriyi yenile'){
+ const button=$('refreshSharedButton');if(!button)return;
+ button.style.display=show?'':'none';button.textContent=caption;
+}
+async function loadSharedData(force=false){
+ if(!serverEnabled)return false;
+ if(force&&(!sharedEligibleForAutoRefresh()||sharedConflict)&&!confirm('Sunucudaki güncel veri getirilecek. Kaydedilmemiş ekran düzenlemeleri kaybolabilir. Devam edilsin mi?'))return false;
+ try{
+  await serverQueue.catch(()=>{}); // Pending writes must finish before a manual refresh.
+  const response=await fetch('/api/state',{cache:'no-store'});
+  if(response.status===401){setSaveIndicator('Oturum kapandı · tekrar giriş yapın','error');location.href='/login';return false;}
+  if(!response.ok)throw Error('Ortak veri okunamadı (HTTP '+response.status+').');
+  const payload=await response.json();
+  if(!Number.isInteger(payload.revision))throw Error('Ortak sunucu yanıtı geçersiz.');
+  if(payload.revision===sharedRevision){remoteVersionWaiting=null;setSharedRefreshButton(true);return true;}
+  if(!force&&!sharedEligibleForAutoRefresh()){
+    remoteVersionWaiting=payload.revision;setSaveIndicator('Başka kullanıcı güncelleme yaptı · Yenile','warning');
+    setSharedRefreshButton(true,'↻ Yeni değişiklikleri getir');return false;
+  }
+  await serverQueue.catch(()=>{});
+  db=(payload.data&&['products','groups','offers','dictionary'].every(k=>Array.isArray(payload.data[k])))?payload.data:structuredClone(seed);
+  sharedRevision=payload.revision;sharedConflict=false;remoteVersionWaiting=null;
+  const migrated=migrateDatabase();renderAll();
+  saveLocal(JSON.stringify(db));
+  setSharedRefreshButton(true);
+  setSaveIndicator('Ortak veriler güncel · sürüm '+sharedRevision,'ok');
+  if(migrated&&payload.data)await persist();
+  return true;
+ }catch(e){setSaveIndicator('Ortak veriye erişilemedi: '+e.message,'error');return false;}
+}
+async function refreshSharedData(force=true){return await loadSharedData(force);}
+async function pollSharedData(){
+ if(!serverEnabled||sharedBusy||sharedConflict)return;
+ try{
+  const response=await fetch('/api/state',{cache:'no-store'});
+  if(!response.ok)return;
+  const payload=await response.json();
+  if(Number.isInteger(payload.revision)&&payload.revision!==sharedRevision){
+   if(sharedEligibleForAutoRefresh())await loadSharedData(false);
+   else{remoteVersionWaiting=payload.revision;setSharedRefreshButton(true,'↻ Yeni değişiklikleri getir');setSaveIndicator('Başka kullanıcı güncelleme yaptı · Yenile','warning');}
+  }
+ }catch(e){console.warn('Ortak senkronizasyon kontrolü:',e);}
+}
+
+function setSaveIndicator(message,state='ok'){
+ const el=$('saveIndicator');if(el){el.textContent=message;el.dataset.state=state;}
+ const side=document.querySelector('.side-status p');if(side && state==='error')side.textContent='Ortak kayıt başarısız. İnternet bağlantısını ve oturumu kontrol edin; JSON yedeği alın.';
+}
+function saveLocal(snapshot){
+ try{
+  localStorage.setItem(KEY,snapshot);
+  if(localStorage.getItem(KEY)!==snapshot)throw Error('Kayıt doğrulanamadı');
+  storageFailure=false;return true;
+ }catch(err){storageFailure=true;console.warn('Tarayıcı kaydı kullanılamıyor:',err);return false;}
+}
+async function persist(){
+ const snapshot=JSON.stringify(db);
+ const localSaved=saveLocal(snapshot);
+ renderAll();
+ if(typeof updateDashboardSetup==='function')updateDashboardSetup();
+ if(serverEnabled){
+  if(sharedConflict){setSaveIndicator('SÜRÜM ÇAKIŞMASI · önce ortak veriyi yenileyin','error');return false;}
+  sharedBusy=true;
+  setSaveIndicator('Ortak sunucuya kaydediliyor…','warning');
+  const task=serverQueue.catch(()=>{}).then(async()=>{
+   const response=await fetch('/api/state',{
+    method:'PUT',headers:{'Content-Type':'application/json','X-Kalde-Request':'shared-state'},
+    body:JSON.stringify({expectedRevision:sharedRevision,data:JSON.parse(snapshot)}),cache:'no-store'
+   });
+   const result=await response.json().catch(()=>({}));
+   if(response.status===409){sharedConflict=true;remoteVersionWaiting=result.revision;
+    throw Error('Bu sırada başka kullanıcı veri kaydetti. Sunucu verisini yenileyin; mevcut ekranı JSON olarak yedekleyebilirsiniz.');}
+   if(response.status===401){location.href='/login';throw Error('Oturumunuz sona erdi.');}
+   if(!response.ok)throw Error(result.error||'HTTP '+response.status);
+   sharedRevision=result.revision;
+   return true;
+  });
+  serverQueue=task;
+  try{
+   await task;
+   sharedBusy=false;remoteVersionWaiting=null;
+   setSaveIndicator('Herkese kaydedildi · sürüm '+sharedRevision,'ok');
+   setSharedRefreshButton(true);return true;
+  }catch(err){
+   sharedBusy=false;
+   setSaveIndicator('ORTAK KAYIT BAŞARISIZ: '+err.message,'error');
+   setSharedRefreshButton(true,'↻ Ortak veriyi yenile');
+   return false; // Local storage never counts as shared/server success.
+  }
+ }
+ setSaveIndicator(localSaved?'Yalnızca bu tarayıcıda · ortak değil':'KAYDEDİLEMEDİ · JSON yedeği alın',localSaved?'warning':'error');
+ return localSaved;
+}
+async function bootstrapPersistence(){
+ if(['http:','https:'].includes(location.protocol)){
+  try{
+   const response=await fetch('/api/state',{cache:'no-store'});
+   if(response.ok&&response.headers.get('X-Kalde-Server')==='1'){
+    const payload=await response.json();
+    if(Number.isInteger(payload.revision)){
+     serverEnabled=true;sharedRevision=payload.revision;
+     const localProducts=Array.isArray(db?.products)?db.products.length:0;
+     db=payload.data&&['products','groups','offers','dictionary'].every(k=>Array.isArray(payload.data[k]))?payload.data:structuredClone(seed);
+     const migrated=migrateDatabase();renderAll();
+     saveLocal(JSON.stringify(db));
+     setSaveIndicator(payload.data?'Ortak veriler güncel · sürüm '+sharedRevision:'Ortak sunucu boş · eski veriler için JSON yükleyin','ok');
+     setSharedRefreshButton(true);
+     if(migrated&&payload.data)await persist();
+     if(!payload.data&&localProducts)console.info('Eski cihaz verileri otomatik aktarılmadı. Ayarlar > JSON yedeğinden geri yükle.');
+     sharedRefreshTimer=setInterval(pollSharedData,12000);
+     document.addEventListener('visibilitychange',()=>{if(!document.hidden)pollSharedData();});
+     return;
+    }
+    console.warn('Sunucunun sürüm numarası yok; güvenli ortak veri desteği bulunmuyor.');
+   }
+  }catch(err){console.warn('Ortak sunucu bulunamadı:',err);}
+ }
+ const localOk=(()=>{try{return localStorage.getItem(KEY)!==null||saveLocal(JSON.stringify(db));}catch{return false;}})();
+ setSaveIndicator(localOk?'Yalnızca bu tarayıcıda · PAYLAŞILMAZ':'KAYIT KAPALI · sunucu gerekiyor',localOk?'warning':'error');
+}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function norm(v){return String(v??'').toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ş/g,'s').replace(/ç/g,'c').replace(/ö/g,'o').replace(/ü/g,'u').replace(/\bmm\b/g,'').replace(/[°º]/g,' derece ').replace(/[^a-z0-9/]+/g,' ').replace(/\s+/g,' ').trim()}function money(n,c=$('currency').value){return new Intl.NumberFormat('tr-TR',{style:'currency',currency:c}).format(Number(n)||0)}function tab(name){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('hidden',x.id!==name));document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));renderAll()}document.querySelectorAll('.nav').forEach(x=>x.onclick=()=>tab(x.dataset.tab));$('offerDate').value=new Date().toISOString().slice(0,10);
+
+/* v3: Eski tarayıcı kayıtlarındaki boş grupları otomatik iyileştir; ürün/teklif silme. */
+function parseDiscountRate(raw){
+ const input=String(raw??'').trim().replace(/%/g,'').replace(/\s/g,'').replace(',','.');
+ if(input===''||!/^\d+(?:\.\d{1,4})?$/.test(input))return null;
+ const value=Number(input);return Number.isFinite(value)&&value>=0&&value<=100?value:null;
+}
+function ensureDefaultGroups(){
+ // Groups are a fixed shared taxonomy, never an extendable second category list.
+ const current=Array.isArray(db.groups)?db.groups:[];
+ db.groups=defaultGroups.map(g=>{
+  const saved=current.find(v=>v.id===g.id)||current.find(v=>norm(v.name)===norm(g.name));
+  return {...g,discount:parseDiscountRate(saved?.discount)??0};
+ });
+ return db.groups.length;
+}
+function migrateDatabase(){
+ if(!db||typeof db!=='object')db=structuredClone(seed);
+ for(const k of ['products','dictionary','offers'])if(!Array.isArray(db[k]))db[k]=[];
+ const previous=Array.isArray(db.groups)?db.groups:[];
+ db.meta=db.meta||{};
+ const migratedBefore=Number(db.meta.unifiedGroupVersion||0)<1;
+ if(migratedBefore){
+  // Recoverable snapshot, because many old groups carried different discounts.
+  db.meta.previousDetailedGroups=JSON.parse(JSON.stringify(previous));
+  db.meta.unifiedGroupMigrationAt=new Date().toISOString();
+  try{
+   const stored=localStorage.getItem(KEY);
+   if(stored&&!localStorage.getItem(KEY+'_pre_unified_groups_backup'))localStorage.setItem(KEY+'_pre_unified_groups_backup',stored);
+  }catch{}
+ }
+ const oldById=new Map(previous.map(g=>[g.id,g]));
+ ensureDefaultGroups();
+ let unmatched=0;
+ for(const p of db.products){
+  let category=CATALOG_CATEGORIES.includes(p.category)?p.category:'';
+  if(!category){
+   const legacy=oldById.get(p.groupId);
+   category=legacy?legacyGroupCategory(legacy.name):'Diğer';
+   if(!legacy||category==='Diğer')unmatched++;
+  }
+  p.category=category;
+  p.groupId=groupIdForCategory(category);
+ }
+ db.meta.unifiedGroupVersion=1;
+ db.meta.groupMigrationNeedsReview=unmatched;
+ // Existing item names, stock codes, prices and saved offers are untouched.
+ if(migratedBefore){try{localStorage.setItem(KEY,JSON.stringify(db));}catch{}}
+ return migratedBefore;
+}
+migrateDatabase();
+function renderAll(){
+ // Removed overview metrics are no longer required by rendering.
+ for(const id of ['pGroup','importGroup']){
+  const control=$(id);if(!control)continue;
+  const previous=control.value;
+  control.innerHTML=db.groups.map(g=>`<option value="${esc(id==='pGroup'?g.id:g.name)}">${esc(g.name)}</option>`).join('');
+  const values=id==='pGroup'?db.groups.map(g=>g.id):db.groups.map(g=>g.name);
+  if(values.includes(previous))control.value=previous;
+ }
+ renderProducts();renderCatalogDeleteOptions();renderGroups();renderDict();renderSaved();renderLines();
+}
+function saveProduct(){
+ const code=$('pCode').value.trim(),rawName=$('pName').value.trim(),list=$('pList').value.trim(),section=$('pSection').value.trim()||list;
+ const price=$('pPrice').value.trim()===''?null:Number($('pPrice').value);
+ if(!rawName||!list||(price!==null&&(!Number.isFinite(price)||price<0))){alert('Ürün adı, liste ve geçerli fiyat girin.');return;}
+ const name=completeCatalogName(rawName,section,price);
+ const obj={id:$('editProduct').value||uid(),code,name,section,groupId:$('pGroup').value,category:db.groups.find(g=>g.id===$('pGroup').value)?.name||'Diğer',list,price,unit:$('pUnit').value};
+ const index=db.products.findIndex(p=>p.id===obj.id);
+ if(index>=0)db.products[index]=obj;else db.products.push(obj);
+ resetProduct();persist();
+}
+function resetProduct(){['editProduct','pCode','pName','pList','pPrice','pSection'].forEach(x=>$(x).value='')}
+function editProduct(id){
+ const p=db.products.find(x=>x.id===id);if(!p)return;
+ tab('products');$('editProduct').value=p.id;$('pCode').value=p.code;$('pName').value=p.name;
+ $('pGroup').value=p.groupId;$('pList').value=p.list;$('pPrice').value=p.price??'';
+ $('pSection').value=p.section||p.list;$('pUnit').value=p.unit;window.scrollTo(0,0);
+}
+function delProduct(id){if(confirm('Ürünü silmek istiyor musunuz?')){db.products=db.products.filter(x=>x.id!==id);persist()}}
+function renderProducts(){
+ const search=norm($('productSearch').value);
+ // Group by PDF section within its originating price list. Do not render a flat 500-row table.
+ const matches=db.products.filter(p=>norm([p.code,p.name,p.list,p.section,db.groups.find(g=>g.id===p.groupId)?.name||''].join(' ')).includes(search));
+ const folders=new Map();
+ for(const p of matches){
+  const section=(p.section||p.list||'Diğer ürünler').trim();
+  const key=norm(p.list||'')+'|'+norm(section);
+  if(!folders.has(key))folders.set(key,{section,list:p.list||'',products:[]});
+  folders.get(key).products.push(p);
+ }
+ const out=[...folders.values()].sort((a,b)=>a.section.localeCompare(b.section,'tr'));
+ $('productFolders').innerHTML=out.map(folder=>{
+  const rows=folder.products.sort((a,b)=>(a.name||'').localeCompare(b.name||'','tr')).map(p=>`<tr><td>${esc(p.code)}</td><td><b>${esc(p.name)}</b></td><td>${esc(p.category||'Eski kayıt')}</td><td>${p.price===null||p.price===undefined?'<span class="pill warn">Fiyat girilmedi</span>':money(p.price)}</td><td>${esc(p.unit)}</td><td><button type="button" class="btn secondary small" onclick="editProduct('${esc(p.id)}')">Düzenle</button> <button type="button" class="btn red small" onclick="delProduct('${esc(p.id)}')">Sil</button></td></tr>`).join('');
+  const priced=folder.products.filter(p=>p.price!==null&&p.price!==undefined).length;
+  return `<details class="catalog-folder" ${search?'open':''}><summary><div class="catalog-folder-main"><span class="catalog-folder-arrow" aria-hidden="true">▶</span><div><span class="catalog-folder-title">${esc(folder.section)}</span><span class="catalog-folder-source">${esc(folder.list)}</span></div></div><div class="catalog-folder-stats"><span class="pill">${folder.products.length} ürün</span>${priced<folder.products.length?`<span class="pill warn">${folder.products.length-priced} fiyatsız</span>`:''}</div></summary><div class="catalog-folder-body"><div class="tablewrap"><table><thead><tr><th>Stok kodu</th><th>Ürün adı</th><th>Üst kategori</th><th>Liste fiyatı</th><th>Birim</th><th>İşlem</th></tr></thead><tbody>${rows}</tbody></table></div></div></details>`;
+ }).join('')||'<p class="empty">Aramanızla eşleşen ürün bulunamadı. Önce katalog yükleyin veya aramayı temizleyin.</p>';
+}
+function catalogCounts(){
+ const counts=new Map();
+ for(const p of db.products){const list=String(p.list||'').trim();if(!list)continue;counts.set(list,(counts.get(list)||0)+1);}
+ return [...counts.entries()].sort((a,b)=>a[0].localeCompare(b[0],'tr'));
+}
+function renderCatalogDeleteOptions(){
+ const select=$('deleteCatalogSelect');if(!select)return;
+ const before=select.value;const options=catalogCounts();
+ select.innerHTML='<option value="">Önce bir katalog seçin</option>'+options.map(([name,count])=>`<option value="${esc(name)}">${esc(name)} (${count} ürün)</option>`).join('');
+ if(options.some(([name])=>name===before))select.value=before;
+ updateCatalogDeleteSummary();
+}
+function updateCatalogDeleteSummary(){
+ const select=$('deleteCatalogSelect'),name=select?.value||'';
+ const count=db.products.filter(p=>p.list===name).length;
+ $('deleteCatalogBtn').disabled=!name||!count;
+ $('deleteCatalogSummary').textContent=name?`“${name}” kataloğunda ${count} ürün var. Silindiğinde tamamı kaldırılır.`:'Silinecek kataloğu seçin. Diğer kataloglar etkilenmez.';
+}
+async function deleteEntireCatalog(){
+ const select=$('deleteCatalogSelect'),name=select.value;
+ const count=db.products.filter(p=>p.list===name).length;
+ if(!name||!count)return;
+ if(!confirm(`“${name}” kataloğundaki ${count} ürünün TAMAMI silinecek.\n\nDiğer kataloglar ve kayıtlı teklifler silinmeyecek.\n\nİşlem geri alınamaz. Devam edilsin mi?`))return;
+ const previous=db.products;
+ db.products=previous.filter(p=>p.list!==name);
+ if(!await persist()){
+  db.products=previous;renderAll();
+  $('deleteCatalogSummary').textContent='Silme işlemi kaydedilemedi. Ürünler geri yüklendi.';
+  $('deleteCatalogSummary').dataset.state='error';return;
+ }
+ $('deleteCatalogSummary').textContent=`“${name}” kataloğuna ait ${count} ürün silindi.`;
+ $('deleteCatalogSummary').dataset.state='ok';
+}
+/* Denetim Excel'i v2.7 — changes are matched by immutable ID, never by fuzzy name/size. */
+const AUDIT_COLUMNS=['Katalog','Üst Başlık','Stok Kodu','Ürün Adı','Grup','Fiyat','Birim','Koli Adedi'];
+let pendingAudit=null;
+function auditSnapshot(p){
+ return [String(p.list||''),String(p.section||''),String(p.code||''),String(p.name||''),
+ String(p.groupId||''),p.price===null||p.price===undefined?'':String(p.price),String(p.unit||''),String(p.packageQty||'')].join('\u001f');
+}
+function auditSignature(p){
+ // Accidental-edit / stale-file check, not a security signature.
+ let hash=2166136261;
+ for(const ch of auditSnapshot(p)){hash^=ch.codePointAt(0);hash=Math.imul(hash,16777619);}
+ return 'V27-'+(hash>>>0).toString(16).padStart(8,'0');
+}
+function downloadCatalogAudit(){
+ if(!window.XLSX)return alert('Excel kütüphanesi yüklenemedi.');
+ const seen=new Map();const rows=db.products.map(p=>{
+  const key=norm(p.list)+'|'+norm(p.code||'');
+  const productMat=catalogMaterial([p.name,p.section||''].join(' '));
+  const group=db.groups.find(g=>g.id===p.groupId)?.name||'';
+  const groupMat=catalogMaterial(group);
+  const warnings=[];
+  if(productMat&&groupMat&&productMat!==groupMat)warnings.push('PP/PVC GRUP UYUŞMAZLIĞI');
+  if(p.code){if(seen.has(key))warnings.push('TEKRAR EDEN STOK KODU');seen.set(key,1);}
+  if(p.price==null)warnings.push('FİYAT EKSİK');
+  return {'İşlem':'','Katalog':p.list||'','Üst Başlık':p.section||'','Stok Kodu':p.code||'','Ürün Adı':p.name||'','Grup':group,'Fiyat':p.price??'','Birim':p.unit||'','Koli Adedi':p.packageQty||'','Uyarılar':warnings.join(' | '),'Kaynak kontrolü':'KONTROL EDİLMEDİ','Kayıt ID':p.id,'Kayıt İmzası':auditSignature(p)};
+ });
+ const wb=XLSX.utils.book_new(),ws=XLSX.utils.json_to_sheet(rows,{header:['İşlem',...AUDIT_COLUMNS,'Uyarılar','Kaynak kontrolü','Kayıt ID','Kayıt İmzası']});
+ ws['!cols']=[{wch:16},{wch:24},{wch:26},{wch:22},{wch:46},{wch:26},{wch:16},{wch:15},{wch:15},{wch:15},{wch:35},{wch:24},{wch:25},{wch:18}];
+ XLSX.utils.book_append_sheet(wb,ws,'Katalog Kontrol');
+ const guide=[['KONTROL EXCELİ DÜZENLEME REHBERİ'],['1','Katalog Kontrol sekmesinde hatalı ürünün adı, grubu, fiyatı, stok kodu vb. alanlarını kaynak fiyat listesine göre düzeltin.'],['2','Değiştirmek istediğiniz satırın İşlem sütununa DÜZELT yazın.'],['3','Aynı satırdaki Kaynak kontrolü alanına DOĞRULANDI yazın.'],['4','Kayıt ID ve Kayıt İmzası sütunlarına KESİNLİKLE dokunmayın.'],['5','Satır silmeyin veya yeni ürün satırı eklemeyin. Yeni ürünler uygulamanın Tekil Ürün Ekle alanından girilir.'],['6','Dosyayı XLSX olarak kaydedin; uygulamadaki Düzeltilmiş Denetim Excel’ini Geri Yükle alanına yükleyin.'],['7','Değişiklik önizlemesini doğrulayın, onaylayın ve kaydedin. İşlem öncesi JSON yedek indirilir.'],['UYARI','Sadece orijinal katalogdan doğruladığınız değerleri girin. PP ve PVC ürünlerinde fiyatları tahmin etmeyin.']];
+ const help=XLSX.utils.aoa_to_sheet(guide);help['!cols']=[{wch:16},{wch:115}];XLSX.utils.book_append_sheet(wb,help,'NASIL DÜZENLENİR');
+ XLSX.writeFile(wb,'Urun_Grup_Fiyat_Denetimi.xlsx');
+}
+function auditSetStatus(s,state='note'){const e=$('auditStatus');if(e){e.textContent=s;e.dataset.state=state;}}
+function clearAuditPreview(){pendingAudit=null;$('auditPreview').classList.add('hidden');$('auditAcknowledge').checked=false;$('auditApply').disabled=true;auditSetStatus('');}
+function auditUpdateApplyState(){
+ const canApply=!!pendingAudit&&pendingAudit.changes.length>0&&pendingAudit.errors.length===0;
+ $('auditApply').disabled=!canApply||!$('auditAcknowledge').checked;
+}
+function auditPriceValue(v){
+ if(v===undefined||v===null||String(v).trim()==='')return null;
+ if(typeof v==='number')return Number.isFinite(v)&&v>=0?v:NaN;
+ let s=String(v).replace(/[₺\s]/g,'').replace(/(?:TL|TRY)/gi,'').trim();
+ if(!/^[0-9.,]+$/.test(s))return NaN;
+ if(s.includes(',')&&s.includes('.'))s=s.lastIndexOf(',')>s.lastIndexOf('.')?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'');
+ else if(s.includes(',')){if((s.match(/,/g)||[]).length!==1)return NaN;s=s.replace(',','.');}
+ else if(s.includes('.')&&(s.match(/\./g)||[]).length>1)return NaN;
+ // Text "1.250" can mean 1.25 or 1,250; require numerical Excel cell instead.
+ if(/^\d{1,3}\.\d{3}$/.test(s))return NaN;
+ const n=Number(s);return Number.isFinite(n)&&n>=0?n:NaN;
+}
+function auditFieldObject(p){return {'Katalog':String(p.list||''),'Üst Başlık':String(p.section||''),'Stok Kodu':String(p.code||''),'Ürün Adı':String(p.name||''),'Grup':db.groups.find(g=>g.id===p.groupId)?.name||'','Fiyat':p.price??'','Birim':String(p.unit||''),'Koli Adedi':String(p.packageQty||'')};}
+function auditRowCandidate(row,p){
+ const result={...p},values={};const problems=[];
+ for(const header of AUDIT_COLUMNS){if(!Object.prototype.hasOwnProperty.call(row,header)){problems.push('Eksik sütun: '+header);continue;}values[header]=row[header];}
+ if(problems.length)return {result,problems,changed:[]};
+ const txt=(x)=>String(x===null||x===undefined?'':x).trim();
+ result.list=txt(values.Katalog);result.section=txt(values['Üst Başlık']);result.code=txt(values['Stok Kodu']);result.name=txt(values['Ürün Adı']);
+ const groupName=txt(values.Grup);
+ const group=db.groups.find(g=>norm(g.name)===norm(groupName));
+ if(!group)problems.push('Ürün grubu bulunamadı: '+(groupName||'(boş)'));
+ else {result.groupId=group.id;result.category=group.name;}
+ const price=auditPriceValue(values.Fiyat);if(Number.isNaN(price))problems.push('Geçersiz veya belirsiz fiyat');else result.price=price;
+ result.unit=txt(values.Birim)||'adet';result.packageQty=txt(values['Koli Adedi']);
+ if(!result.name)problems.push('Ürün adı boş olamaz');
+ if(!result.list)problems.push('Katalog boş olamaz');
+ const nameMat=catalogMaterial(result.name),sectionMat=catalogMaterial(result.section),groupMat=catalogMaterial(group?.name||'');
+ if(nameMat&&sectionMat&&nameMat!==sectionMat)problems.push('Ürün adı ve üst başlıkta PP/PVC uyuşmazlığı');
+ if((nameMat||sectionMat)&&groupMat&&(nameMat||sectionMat)!==groupMat)problems.push('PP/PVC ürün grubu uyuşmazlığı');
+ const was=auditFieldObject(p),is=auditFieldObject(result);
+ const changed=AUDIT_COLUMNS.filter(k=>String(was[k])!==String(is[k])).map(k=>({field:k,before:was[k],after:is[k]}));
+ return {result,problems,changed};
+}
+async function previewAuditCorrections(){
+ clearAuditPreview();const file=$('auditFile').files?.[0];
+ if(!file)return auditSetStatus('Önce düzenlediğiniz Excel dosyasını seçin.','error');
+ if(!window.XLSX)return auditSetStatus('Excel kütüphanesi yüklenemedi. İnternet bağlantısını kontrol edin.','error');
+ try{
+  const workbook=XLSX.read(await file.arrayBuffer(),{type:'array'});
+  const sheet=workbook.Sheets['Katalog Kontrol'];
+  if(!sheet)throw Error('Katalog Kontrol sekmesi bulunamadı. Uygulamadan yeni denetim Excel’i indirin.');
+  const rows=XLSX.utils.sheet_to_json(sheet,{defval:'',raw:true});
+  if(!rows.length)throw Error('Excel boş.');
+  if(!Object.prototype.hasOwnProperty.call(rows[0],'Kayıt ID')||!Object.prototype.hasOwnProperty.call(rows[0],'Kayıt İmzası'))throw Error('Bu eski denetim Excel’inde Kayıt ID yok. Yeni sürümden tekrar indirin.');
+  const errors=[],changes=[],seen=new Set();let skipped=0;
+  for(let i=0;i<rows.length;i++){
+   const row=rows[i],id=String(row['Kayıt ID']||'').trim(),flag=norm(row['İşlem']),source=norm(row['Kaynak kontrolü']);
+   const rowNumber=i+2;
+   if(!id){errors.push(`Satır ${rowNumber}: Kayıt ID boş; yeni ürün eklemek için Tekil Ürün Ekle alanını kullanın.`);continue;}
+   if(seen.has(id)){errors.push(`Satır ${rowNumber}: aynı Kayıt ID iki kez var.`);continue;}seen.add(id);
+   if(flag!==''&&flag!=='duzelt'){errors.push(`Satır ${rowNumber}: İşlem sütununda sadece DÜZELT veya boş değer kullanılabilir.`);continue;}
+   if(flag!=='duzelt'){skipped++;continue;}
+   const p=db.products.find(x=>x.id===id);
+   if(!p){errors.push(`Satır ${rowNumber}: kayıt bulunamadı. Başka katalogla karıştırmayın.`);continue;}
+   if(String(row['Kayıt İmzası']||'').trim()!==auditSignature(p)){errors.push(`Satır ${rowNumber}: ürün sonradan değişmiş veya imza sütunu bozulmuş. Yeni denetim dosyası indirin.`);continue;}
+   if(source!=='dogrulandi'){errors.push(`Satır ${rowNumber}: Kaynak kontrolü sütununa DOĞRULANDI yazın.`);continue;}
+   const candidate=auditRowCandidate(row,p);
+   if(candidate.problems.length){errors.push(`Satır ${rowNumber}: ${candidate.problems.join('; ')}`);continue;}
+   if(!candidate.changed.length){skipped++;continue;}
+   changes.push({id,old:p,next:candidate.result,fields:candidate.changed,rowNumber});
+  }
+  // Assess all changes as one transaction: no duplicated SKU within any resulting list.
+  const proposed=new Map(db.products.map(p=>[p.id,p]));for(const c of changes)proposed.set(c.id,c.next);
+  const skuSeen=new Map();
+  for(const p of proposed.values()){
+   if(!String(p.code||'').trim())continue;
+   const key=norm(p.list)+'|'+norm(p.code);
+   if(skuSeen.has(key)&&skuSeen.get(key)!==p.id && (changes.some(c=>c.id===p.id)||changes.some(c=>c.id===skuSeen.get(key)))){errors.push('Çakışan stok kodu: '+p.code+' (katalog: '+p.list+')');}
+   else skuSeen.set(key,p.id);
+  }
+  pendingAudit={changes,errors:[...new Set(errors)],skipped};
+  $('auditPreview').classList.remove('hidden');
+  $('auditSummary').textContent=`${changes.length} ürün düzeltilecek · ${skipped} satır işlem dışı · ${pendingAudit.errors.length} hata/engel`;
+  const warnings=pendingAudit.errors.map(e=>`<tr><td colspan="3" class="audit-warning">${esc(e)}</td></tr>`).join('');
+  const previews=changes.slice(0,100).map(c=>`<tr><td><strong>${esc(c.old.name)}</strong><br><small>${esc(c.old.code||'Kodsuz')} · ${esc(c.old.list)}</small></td><td>${c.fields.map(f=>`<span class="audit-change">${esc(f.field)}: <del>${esc(f.before??'—')}</del> → <ins>${esc(f.after??'—')}</ins></span>`).join('')}</td><td class="audit-valid">Kaynak doğrulandı</td></tr>`).join('');
+  $('auditRows').innerHTML=warnings+previews||'<tr><td colspan="3" class="empty">DÜZELT olarak işaretlenmiş değişiklik bulunamadı.</td></tr>';
+  if(changes.length>100)$('auditSummary').textContent+=' · İlk 100 değişiklik gösteriliyor';
+  auditSetStatus(pendingAudit.errors.length?'Kaydetme engellendi: Excel’deki sorunları düzeltip yeniden yükleyin.':changes.length?'Değişiklikler hazır. Önizlemeyi kontrol edip onaylayın.':'Değişiklik bulunamadı. Satırlarda İşlem = DÜZELT ve Kaynak kontrolü = DOĞRULANDI seçildiğinden emin olun.',pendingAudit.errors.length?'error':changes.length?'ok':'warn');
+  auditUpdateApplyState();
+ }catch(err){auditSetStatus('Excel içe aktarılamadı: '+err.message,'error');}
+}
+async function applyAuditCorrections(){
+ if(!pendingAudit||pendingAudit.errors.length||!pendingAudit.changes.length||!$('auditAcknowledge').checked)return;
+ const planned=pendingAudit.changes;
+ // Re-check protection in case another editor modified records while preview was open.
+ for(const c of planned){const current=db.products.find(x=>x.id===c.id);if(!current||auditSnapshot(current)!==auditSnapshot(c.old)){auditSetStatus('Kayıtlar önizleme sonrası değişti. Dosyayı yeniden kontrol edin.','error');$('auditApply').disabled=true;return;}}
+ if(!confirm(planned.length+' ürünün belirtilen alanları değiştirilecek. Fiyat ve PP/PVC gruplarını kaynak listeyle doğruladığınızdan emin olun. Devam edilsin mi?'))return;
+ // Download a full recovery copy before touching the catalog.
+ backup();
+ const before=db.products;
+ const changes=new Map(planned.map(c=>[c.id,c.next]));
+ db.products=before.map(p=>changes.get(p.id)||p);
+ if(!await persist()){
+  db.products=before;renderAll();auditSetStatus('Kayıt başarısız. Değişiklikler geri alındı; JSON yedeğini saklayın.','error');return;
+ }
+ pendingAudit=null;$('auditPreview').classList.add('hidden');$('auditFile').value='';
+ auditSetStatus(planned.length+' ürün düzeltildi ve kaydedildi. Katalogda kontrol edin; işlem öncesi JSON yedeğiniz indirildi.','ok');
+}
+async function cleanupExistingCatalogNames(){
+ alert('Güvenlik nedeniyle toplu otomatik isim temizleme kapatıldı. Gerçek ölçüyü koli adedinden ayıramadığımız ürünleri tek tek düzenleyin veya orijinal katalogdan kontrollü içe aktarın.');
+}
+
+function showGroupMessage(text,state='note'){
+ const target=$('groupMessage');target.textContent=text;target.dataset.state=state;
+}
+async function addGroup(){showGroupMessage('Ürün grupları sabittir: Plastik, Metal, Altyapı Sistemleri, Radyatör, Diğer. Tabloda yalnızca iskonto oranlarını değiştirin.','error');}
+async function saveGroupRow(id){
+ const group=db.groups.find(g=>g.id===id);if(!group)return;
+ const value=document.getElementById('group-rate-'+id)?.value;
+ const rate=parseDiscountRate(value);
+ if(rate===null){showGroupMessage('İskonto 0 ile 100 arasında olmalı. Örn. 22,5','error');return;}
+ const before=group.discount;group.discount=rate;
+ if(!await persist()){
+  group.discount=before;renderAll();showGroupMessage('İskonto kaydedilemedi. Yerel sunucuyla açın.','error');return;
+ }
+ showGroupMessage(group.name+' için %'+rate+' iskonto kaydedildi. Bu grup katalog yükleme ekranında da aynıdır.','success');
+}
+async function setGroupDiscount(id,val){
+ const input=document.getElementById('group-rate-'+id);if(input)input.value=val;
+ return saveGroupRow(id);
+}
+async function delGroup(){showGroupMessage('Beş ortak ürün grubu silinemez; ürünler ve iskontolar aynı yapıyı kullanır.','error');}
+async function restoreDefaultGroups(){showGroupMessage('Beş ürün grubu zaten katalog yükleme ile aynıdır.','success');}
+function applyDiscountsToCurrentQuote(){
+ const found=lines.filter(l=>l.productId&&db.products.some(p=>p.id===l.productId));
+ if(!found.length){showGroupMessage('Açık teklifte gruba bağlı ürün yok. Önce bir teklifte ürün seçin.','error');return;}
+ if(!confirm(`${found.length} teklif satırının iskontosu güncel grup oranlarıyla değiştirilecek. Elle girilmiş satır iskontoları da değişebilir. Devam edilsin mi?`))return;
+ for(const l of found){const p=db.products.find(p=>p.id===l.productId);l.discount=db.groups.find(g=>g.id===p.groupId)?.discount??0;}
+ renderLines();showGroupMessage(`${found.length} teklif satırına grup iskonto oranları uygulandı. Teklifi yeniden kaydedebilirsiniz.`,'success');
+}
+function renderGroups(){
+ const previous=db.meta?.previousDetailedGroups||[];
+ const legacy=previous.filter(g=>!CATALOG_CATEGORIES.some(c=>norm(c)===norm(g.name)));
+ const legacyDetails=$('legacyGroupDetails');
+ if(legacyDetails){legacyDetails.classList.toggle('hidden',!legacy.length);
+  $('legacyGroupRows').innerHTML=legacy.map(g=>`<tr><td>${esc(g.name)}</td><td>%${esc(g.discount||0)}</td><td>${esc(legacyGroupCategory(g.name))}</td></tr>`).join('');
+ }
+ $('groupCount').textContent=db.groups.length;
+ $('discountedCount').textContent=db.groups.filter(g=>g.discount>0).length;
+ $('groupProductCount').textContent=db.products.filter(p=>db.groups.some(g=>g.id===p.groupId)).length;
+ $('groupRows').innerHTML=db.groups.map(g=>`<tr>
+ <td><strong>${esc(g.name)}</strong></td>
+ <td><div class="percent-input"><input class="group-rate" type="text" inputmode="decimal" aria-label="${esc(g.name)} iskonto" id="group-rate-${esc(g.id)}" value="${esc(g.discount)}"><span>%</span></div></td>
+ <td><span class="pill">${db.products.filter(p=>p.groupId===g.id).length} ürün</span></td>
+ <td class="group-actions"><button class="btn secondary small" type="button" onclick="saveGroupRow('${esc(g.id)}')">İskontoyu kaydet</button></td>
+ </tr>`).join('');
+}
+function addTerm(){let phrase=$('dPhrase').value.trim(),target=$('dTarget').value.trim();if(!phrase||!target){alert('İki alanı doldurun.');return}let found=db.dictionary.find(x=>norm(x.phrase)===norm(phrase));if(found)found.target=target;else db.dictionary.push({id:uid(),phrase,target});$('dPhrase').value='';$('dTarget').value='';persist()}function delTerm(id){db.dictionary=db.dictionary.filter(x=>x.id!==id);persist()}function renderDict(){$('dictRows').innerHTML=db.dictionary.map(d=>`<tr><td>${esc(d.phrase)}</td><td>${esc(d.target)}</td><td><button class="btn red small" onclick="delTerm('${d.id}')">Sil</button></td></tr>`).join('')}
+function headerKey(s){return pdfKey(s);}
+function cellNumber(v){return catalogPrice(v);}
+function expandDictionary(s){let out=' '+norm(s)+' ';for(let d of [...db.dictionary].sort((a,b)=>b.phrase.length-a.phrase.length)){let from=norm(d.phrase),to=norm(d.target);if(from)out=out.replace(new RegExp('(^|\\s)'+from.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?=\\s|$)','g'),' '+to+' ')}return norm(out)}function canonicalOrderMeasure(value){return String(value??'').replace(/(\d)\s*[x×X]\s*(\d)/g,'$1x$2')}
+function scoreFor(query,p){let q=expandDictionary(canonicalOrderMeasure(query)),v=norm(canonicalOrderMeasure(p.name+' '+p.code)),qt=q.split(' ').filter(Boolean),vt=v.split(' ').filter(Boolean);if(!qt.length)return 0;
+// Never propose a PP product for PVC demand (or vice versa), regardless of fuzzy score.
+ const qmat=catalogMaterial(query),pmat=catalogMaterial([p.name,p.section||''].join(' '));
+ if(qmat&&pmat&&qmat!==pmat)return 0;
+ if(p.code&&q.includes(norm(p.code)))return 1;
+ let nums=qt.filter(t=>/^\d+$/.test(t));
+ if(nums.some(n=>!vt.includes(n)))return 0;
+ let overlap=qt.filter(t=>vt.includes(t)).length/qt.length;
+ return Math.max(0,overlap+(v.includes(q)?.25:0));}function match(s){let ranked=db.products.map(p=>({p,score:scoreFor(s,p)})).sort((a,b)=>b.score-a.score);let best=ranked[0],second=ranked[1];return best&&best.score>=.32?{p:best.p,status:best.score>=.8&&(!second||best.score-second.score>.12)?'ok':'review'}:{p:null,status:'missing'}}
+/* v3.5 — Talep miktarı ürün ölçüsünden ayrı okunur. Sayıların 50x500 gibi
+   ölçülerde yer alması miktar sayılmaları için asla yeterli değildir. */
+function orderQuantityNumber(value){
+ const text=String(value).trim().replace(/\s/g,'');
+ if(/^\d{1,3}(?:\.\d{3})+$/.test(text))return Number(text.replace(/\./g,''));
+ if(/^\d+(?:[.,]\d+)?$/.test(text))return Number(text.replace(',','.'));
+ return NaN;
+}
+function orderQuantityUnit(raw){
+ const u=norm(raw);
+ if(/^(?:m|mt|metre|metreler)$/.test(u))return 'metre';
+ if(u==='boy')return 'boy';
+ if(u==='kg'||u==='kilogram')return 'kg';
+ if(u==='paket'||u==='pk')return 'paket';
+ if(u==='kutu')return 'kutu';
+ if(u==='takim'||u==='tk')return 'takım';
+ if(u==='cift')return 'çift';
+ return 'adet';
+}
+function extractOrderQuantity(source){
+ const s=String(source??'').trim().replace(/[\u00a0\u202f]/g,' ');
+ const count=String.raw`(\d{1,3}(?:\.\d{3})+|\d+(?:[.,]\d+)?)`;
+ const units=String.raw`(adet|ad\.?|tane|tanes[iı]|adetlik|pcs|piece|metre|mt|m|boy|paket|pk|kutu|takım|takim|tk|kg|kilogram|çift|cift)`;
+ // "50 adet 50x500 PVC boru" / "50 tane 50x500 PVC"
+ const head=new RegExp(String.raw`^\s*${count}\s*${units}(?=\s|$|[:;,])\s*(?:[x×*:=\-]\s*)?(.+?)\s*$`,'i');
+ // "50x500 PVC 50 tane" / "50x500 PVC boru = 50 adet"
+ const tail=new RegExp(String.raw`^(.+?)\s+(?:[x×*:=\-]\s*)?${count}\s*${units}(?=\s*$|\s*[.!]\s*$)\s*[.!]?\s*$`,'i');
+ let m=s.match(head);
+ if(m){const qty=orderQuantityNumber(m[1]);if(qty>0&&m[3].trim())return {name:m[3].trim(),qty,unit:orderQuantityUnit(m[2]),found:true,position:'başta'};}
+ m=s.match(tail);
+ if(m){const qty=orderQuantityNumber(m[2]);if(qty>0&&m[1].trim())return {name:m[1].trim(),qty,unit:orderQuantityUnit(m[3]),found:true,position:'sonda'};}
+ // "50 × PVC BORU 50x500" (yalnız çarpan ayrı yazılmışsa)
+ m=s.match(/^\s*(\d+(?:[.,]\d+)?)\s+[x×*]\s+([a-zçğıöşüA-ZÇĞİÖŞÜ].+)$/i);
+ if(m){const qty=orderQuantityNumber(m[1]);if(qty>0)return {name:m[2].trim(),qty,unit:'adet',found:true,position:'çarpan'};}
+ // Unlabeled numbers ("110 PVC boru", "50x500") are dimensions until confirmed.
+ const ambiguous=/(?:^|\s)\d+(?:[.,]\d+)?\s*(?:adet|tane|pcs|metre|paket|boy)(?=\s|$)/i.test(s) || /\d\s*[x×X]\s*\d.*\s+\d{1,5}\s*$/.test(s);
+ return {name:s,qty:1,unit:'adet',found:false,position:'',ambiguous};
+}
+function orderMatchDescription(name){
+ // 50x500 PVC normally describes pipe dimension x length, even when "boru" omitted.
+ const t=norm(name);
+ const m=String(name).match(/\b\d{2,4}\s*[x×X]\s*(\d{3,5})\b/);
+ if(m && /\bpvc(?:\s*u)?\b/.test(t) && !/\b(?:boru|dirsek|catal|manson|red(u|ü)ksiyon|tapa|korse|kelepce|fittings|vana)\b/.test(t))
+   return name+' boru';
+ return name;
+}
+function parseText(raw){
+ let result=[];
+ for(let s of raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean)){
+  if(/^(urun|malzeme|miktar|stok|toplam|adet\s+fiyat)/i.test(norm(s)))continue;
+  const parsed=extractOrderQuantity(s);
+  const qty=parsed.qty,unit=parsed.unit,name=parsed.name;
+  const m=match(orderMatchDescription(name));
+  const status=parsed.ambiguous?'review':(m.p&&m.p.price==null?'no-price':m.status);
+  result.push({id:uid(),raw:s,name,qty,unit,qtyDetected:parsed.found,qtyNeedsReview:!!parsed.ambiguous,productId:m.p?.id||'',price:m.p?.price??null,discount:db.groups.find(g=>g.id===m.p?.groupId)?.discount||0,status});
+ }
+ return result;
+}
+
+async function readFile(f){let ext=f.name.split('.').pop().toLowerCase();if(['xlsx','xls','csv'].includes(ext)){
+ if(!window.XLSX)throw Error('Excel kütüphanesi yüklenemedi');
+ const wb=XLSX.read(await f.arrayBuffer(),{type:'array'}),arr=[];
+ for(const sheet of wb.SheetNames){
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[sheet],{header:1,defval:''});
+  let columns=null;
+  for(const r of rows){
+   const cells=r.map(x=>String(x??'').trim()),fields=cells.filter(Boolean);
+   if(!fields.length)continue;
+   const head=cells.map(norm);
+   const nameIndex=head.findIndex(x=>/^(?:urun|urun adi|urun tanimi|malzeme|malzeme adi|urun aciklamasi|aciklama|description|talep)$/.test(x));
+   const qtyIndex=head.findIndex(x=>/^(?:miktar|adet|siparis miktari|talep miktari|quantity|qty|sayisi)$/.test(x));
+   if(nameIndex>=0&&qtyIndex>=0){
+    columns={name:nameIndex,qty:qtyIndex,unit:head.findIndex(x=>/^(?:birim|olcu birimi|unit)$/.test(x))};continue;
+   }
+   if(columns){
+    const item=cells[columns.name]||'',qty=cells[columns.qty]||'',rawUnit=columns.unit>=0?cells[columns.unit]||'':'';
+    if(!item)continue;
+    const qtyPart=qty?(qty+' '+(/\b(?:adet|tane|metre|mt|boy|paket|kg|pcs)\b/i.test(qty)?'':rawUnit||'adet')+' '):'';
+    arr.push((qtyPart+item).trim());continue;
+   }
+   // No spreadsheet headers: preserve column order. A standalone numeric cell next
+   // to a description is treated as quantity only in a two-column order list.
+   if(fields.length===2&&/^\d+(?:[.,]\d+)?$/.test(fields[0])&&/[a-zçğıöşü]/i.test(fields[1])){
+     arr.push(fields[0]+' adet '+fields[1]);continue;
+   }
+   if(fields.length===2&&/^\d+(?:[.,]\d+)?$/.test(fields[1])&&/[a-zçğıöşü]/i.test(fields[0])){
+     arr.push(fields[0]+' '+fields[1]+' adet');continue;
+   }
+   arr.push(fields.join(' '));
+  }
+ }
+ return arr.join('\n');
+}
+if(ext==='pdf'){if(!window.pdfjsLib)throw Error('PDF kütüphanesi yüklenemedi');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';let pdf=await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise,parts=[];for(let i=1;i<=Math.min(pdf.numPages,20);i++){let page=await pdf.getPage(i),content=await page.getTextContent(),text=content.items.map(x=>x.str).join(' ');if(text.trim().length>35)parts.push(text);else{let viewport=page.getViewport({scale:2}),canvas=document.createElement('canvas');canvas.width=viewport.width;canvas.height=viewport.height;await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;parts.push(await ocr(canvas))}}return parts.join('\n')}
+if(['png','jpg','jpeg','webp'].includes(ext))return ocr(f);throw Error('Desteklenmeyen dosya tipi')}
+async function ocr(blob){if(!window.Tesseract)throw Error('OCR kütüphanesi yüklenemedi');let res=await Tesseract.recognize(blob,'tur+eng',{logger:m=>{if(m.status)$('readStatus').textContent=m.status+' '+Math.round((m.progress||0)*100)+'%'}});return res.data.text}
+async function parseRequest(){let btn=$('parseBtn');btn.disabled=true;$('readStatus').textContent='Talep okunuyor...';try{let text=$('requestText').value,f=$('requestFile').files[0];if(f)text+=(text?'\n':'')+await readFile(f);if(!text.trim())return alert('Dosya yükleyin veya talep metni girin.');lines=parseText(text);$('readStatus').textContent=`${lines.length} satır yorumlandı; ${lines.filter(l=>l.qtyDetected).length} satırda sipariş miktarı algılandı; ${lines.filter(l=>l.status!=='ok').length} satır kontrol gerektiriyor.`;renderLines()}catch(e){alert('Talep işlenemedi: '+e.message);$('readStatus').textContent='İşlem başarısız'}finally{btn.disabled=false}}
+function addOfferLine(){lines.push({id:uid(),raw:'',name:'',qty:1,unit:'adet',productId:'',price:null,discount:0,status:'missing'});renderLines()}function changeLine(id,key,val){let l=lines.find(x=>x.id===id);if(!l)return;l[key]=key==='price'&&val===''?null:['qty','price','discount'].includes(key)?Number(val):val;if(key==='price')l.status=l.price==null?'no-price':(l.productId?'ok':'review');if(key==='productId'){let p=db.products.find(p=>p.id===val);if(p){l.name=p.name;l.price=p.price??null;l.unit=p.unit;l.discount=db.groups.find(g=>g.id===p.groupId)?.discount||0;l.status=p.price==null?'no-price':'ok'}else l.status='missing'}renderLines()}function removeLine(id){lines=lines.filter(l=>l.id!==id);renderLines()}
+function renderLines(){let options='<option value="">— Ürün seçin —</option>'+db.products.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}${p.code?' ['+esc(p.code)+']':''}</option>`).join('');$('offerLines').innerHTML=lines.map(l=>{let p=db.products.find(p=>p.id===l.productId),net=l.price==null?null:l.price*(1-l.discount/100),sum=net==null?null:l.qty*net;return `<tr><td style="max-width:190px">${esc(l.raw||l.name||'Yeni satır')}</td><td><select style="min-width:220px" onchange="changeLine('${l.id}','productId',this.value)">${options.replace('value="'+esc(l.productId)+'"','value="'+esc(l.productId)+'" selected')}</select>${p?`<div class="hint" style="margin:5px 0 0">Grup: ${esc(db.groups.find(g=>g.id===p.groupId)?.name||'Tanımsız')}</div>`:''}</td><td>${esc(p?.list||'—')}</td><td><input type="number" min="0" step="any" value="${l.qty}" onchange="changeLine('${l.id}','qty',this.value)" style="width:74px"></td><td><input type="number" min="0" step="any" value="${l.price??''}" onchange="changeLine('${l.id}','price',this.value)" style="width:105px"></td><td><input type="number" min="0" max="100" step="any" value="${l.discount}" onchange="changeLine('${l.id}','discount',this.value)" style="width:76px"></td><td>${net===null?'—':money(net)}</td><td><b>${sum===null?'—':money(sum)}</b></td><td><span class="pill ${l.status==='ok'?'':(l.status==='review'||l.status==='no-price')?'warn':'bad'}">${l.status==='ok'?'Eşleşti':l.status==='no-price'?'Fiyat eksik':l.status==='review'?(l.qtyNeedsReview?'Miktarı kontrol et':'Kontrol'):'Bulunamadı'}</span></td><td><button class="btn red small" onclick="removeLine('${l.id}')">×</button></td></tr>`}).join('')||'<tr><td colspan="10" class="empty">Henüz talep işlenmedi.</td></tr>';$('grandTotal').textContent=money(total())}function total(){return lines.reduce((s,l)=>s+(l.price==null?0:l.qty*l.price*(1-l.discount/100)),0)}function offerData(){return {id:currentOfferId||uid(),date:$('offerDate').value,customer:$('customer').value,currency:$('currency').value,note:$('offerNote').value,lines:structuredClone(lines),total:total()}}async function saveOffer(){if(!lines.length)return alert('Önce ürün satırı ekleyin.');const prev=structuredClone(db.offers);let offer=offerData();currentOfferId=offer.id;let i=db.offers.findIndex(x=>x.id===offer.id);if(i>=0)db.offers[i]=offer;else db.offers.push(offer);const stored=await persist();if(!stored){db.offers=prev;renderAll();}alert(stored?'Teklif kaydedildi.':'Teklif kaydedilemedi. Veriyi korumak için JSON yedeği alın ve uygulamayı yerel sunucuda çalıştırın.')}function loadOffer(id){let o=db.offers.find(x=>x.id===id);if(!o)return;$('confirmQuotePrices').checked=false;currentOfferId=id;lines=structuredClone(o.lines);$('customer').value=o.customer;$('offerDate').value=o.date;$('currency').value=o.currency;$('offerNote').value=o.note;tab('request')}function delOffer(id){if(confirm('Teklif silinsin mi?')){db.offers=db.offers.filter(o=>o.id!==id);persist()}}function renderSaved(){$('savedRows').innerHTML=db.offers.map(o=>`<tr><td>${esc(o.date)}</td><td>${esc(o.customer)}</td><td>${o.lines.length}</td><td>${money(o.total,o.currency)}</td><td><button class="btn secondary small" onclick="loadOffer('${o.id}')">Aç</button> <button class="btn red small" onclick="delOffer('${o.id}')">Sil</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty">Kayıtlı teklif bulunmuyor.</td></tr>'}
+function exportRows(){return lines.map((l,i)=>{let p=db.products.find(p=>p.id===l.productId);return {'Sıra':i+1,'Talep':l.raw,'Stok Kodu':p?.code||'','Üst Kategori':p?.category||'','Ürün Adı':p?.name||l.name||'EŞLEŞMEDİ','Fiyat Listesi':p?.list||'','Grup':db.groups.find(g=>g.id===p?.groupId)?.name||'','Miktar':l.qty,'Birim':l.unit,'Liste Fiyatı':l.price??'','İskonto %':l.discount,'Net Birim Fiyat':l.price==null?'':l.price*(1-l.discount/100),'Toplam':l.price==null?'':l.qty*l.price*(1-l.discount/100),'Kontrol Durumu':l.status}})}
+function exportExcel(){if(!$('confirmQuotePrices').checked)return alert('Ürünleri ve fiyatları orijinal liste ile doğrulayıp onay kutusunu işaretleyin.');if(!lines.length)return alert('Önce teklif satırlarını oluşturun.');if(lines.some(l=>l.price==null))return alert('Bazı ürünlerin fiyatı eksik. Teklif çıkarmadan önce fiyatları tamamlayın.');if(lines.some(l=>l.status!=='ok'||!l.productId))return alert('Kontrol bekleyen veya stok kodu bulunmayan satırlar var. Teklif göndermeden önce eşleşen ürünü manuel seçin.');if(!window.XLSX)return alert('Excel modülü yüklenemedi');let wb=XLSX.utils.book_new(),rows=[['FİYAT TEKLİFİ'],['Müşteri',$('customer').value],['Tarih',$('offerDate').value],['Para Birimi',$('currency').value],['Koşullar',$('offerNote').value],[],...XLSX.utils.sheet_to_json(XLSX.utils.json_to_sheet(exportRows()),{header:1}),[],['TOPLAM','','','','','','','','','','',total()]];let ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:8},{wch:25},{wch:22},{wch:38},{wch:24},{wch:18},...Array(7).fill({wch:15})];XLSX.utils.book_append_sheet(wb,ws,'Teklif');XLSX.writeFile(wb,'Teklif_'+($('offerDate').value||'')+'.xlsx')}
+async function exportPDF(){if(!$('confirmQuotePrices').checked)return alert('Ürünleri ve fiyatları orijinal liste ile doğrulayıp onay kutusunu işaretleyin.');if(!lines.length)return alert('Önce teklif satırlarını oluşturun.');if(lines.some(l=>l.price==null))return alert('Bazı ürünlerin fiyatı eksik. Teklif çıkarmadan önce fiyatları tamamlayın.');if(lines.some(l=>l.status!=='ok'||!l.productId))return alert('Kontrol bekleyen veya stok kodu bulunmayan satırlar var. Teklif göndermeden önce eşleşen ürünü manuel seçin.');if(!window.jspdf?.jsPDF)return alert('PDF modülü yüklenemedi');let doc=new jspdf.jsPDF({orientation:'landscape'});doc.setFillColor(12,36,64);doc.rect(0,0,297,34,'F');doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(255);doc.text('TEKLIF MERKEZI',15,21);doc.setFontSize(12);doc.text('FIYAT TEKLIFI',238,21);doc.setTextColor(30,48,68);doc.setFontSize(10);doc.text('Musteri: '+ascii($('customer').value||'Belirtilmedi'),15,45);doc.text('Tarih: '+$('offerDate').value,235,45);let body=exportRows().map(r=>[r['Sıra'],ascii(r['Stok Kodu']),ascii(r['Ürün Adı']),ascii(r['Fiyat Listesi']),r['Miktar']+' '+ascii(r['Birim']),num(r['Liste Fiyatı']),r['İskonto %']+'%',num(r['Net Birim Fiyat']),num(r['Toplam'])]);doc.autoTable({startY:53,head:[['No','Stok Kodu','Urun','Fiyat Listesi','Miktar','Liste Fiyati','Iskonto','Net Birim','Toplam']],body,theme:'striped',styles:{fontSize:8,cellPadding:3},headStyles:{fillColor:[17,49,83]},columnStyles:{2:{cellWidth:65}}});let y=doc.lastAutoTable.finalY+12;if(y>180){doc.addPage();y=20}doc.setFont('helvetica','bold');doc.setFontSize(13);doc.text('GENEL TOPLAM: '+num(total())+' '+$('currency').value,282,y,{align:'right'});doc.setFontSize(9);doc.setFont('helvetica','normal');doc.text('Kosullar: '+ascii($('offerNote').value||''),15,y+10,{maxWidth:260});doc.save('Teklif_'+$('offerDate').value+'.pdf')}
+async function restorePreviousServerBackup(){
+ if(!serverEnabled){alert('Bu özellik yalnızca veri sunucusuyla çalışır. JSON yedeğiniz varsa Ayarlar > Yedekten geri yükle seçeneğini kullanın.');return;}
+ try{
+  const r=await fetch('/api/previous-state',{cache:'no-store'});
+  if(!r.ok)throw Error('Önceki sunucu yedeği bulunamadı');
+  const data=(await r.json()).data;
+  if(!data||!Array.isArray(data.products)||!Array.isArray(data.groups)||!Array.isArray(data.offers)||!Array.isArray(data.dictionary))throw Error('Yedek geçersiz');
+  if(!confirm('Önceki kayıt: '+data.products.length+' ürün, '+data.offers.length+' teklif.\nMevcut kaydınızda '+db.products.length+' ürün var. Önce şimdi JSON yedeği indirin.\nÖNCEKİ KAYDI GERİ YÜKLEMEK İSTİYOR MUSUNUZ?'))return;
+  const previous=db;db=data;migrateDatabase();
+  if(!await persist()){db=previous;renderAll();alert('Geri yükleme kaydedilemedi.');return;}
+  alert('Önceki kayıt yüklendi. Fiyatları orijinal PDF/Excel ile doğrulayın.');
+ }catch(e){alert('Önceki kayıt kullanılamıyor: '+e.message+'. Elinizdeki JSON yedeğini kullanın.');}
+}
+function ascii(s){return String(s||'').replace(/İ/g,'I').replace(/ı/g,'i').replace(/Ş/g,'S').replace(/ş/g,'s').replace(/Ğ/g,'G').replace(/ğ/g,'g').replace(/Ü/g,'U').replace(/ü/g,'u').replace(/Ö/g,'O').replace(/ö/g,'o').replace(/Ç/g,'C').replace(/ç/g,'c')}function num(v){return Number(v).toFixed(2)}function backup(){let a=document.createElement('a'),b=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});a.href=URL.createObjectURL(b);a.download='teklif_merkezi_yedek.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}async function restoreData(e){let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.products)||!Array.isArray(x.groups)||!Array.isArray(x.dictionary)||!Array.isArray(x.offers))throw Error('Geçersiz format');if(confirm('Mevcut veriler bu yedekle değiştirilecek. Önce mevcut verilerin JSON yedeğini indirin. Devam?')){const before=db;db=x;migrateDatabase();if(!await persist()){db=before;renderAll();alert('Geri yükleme kaydedilemedi.');}}}catch(err){alert('Yedek açılamadı: '+err.message)}}renderAll();
+
+</script>
+<script>
+const pageTitles={request:'Yeni Teklif',products:'Ürün ve Fiyat Listeleri',groups:'Ürün Grupları ve İskontolar',dictionary:'Ürün Sözlüğü',offers:'Kayıtlı Teklifler',settings:'Ayarlar ve Yedekleme'};
+const _oldTab=tab;
+// URL hash keeps the visible view aligned with browser Back/Forward,
+// and the anchor href itself provides navigation when JS is unavailable.
+function navigateToPage(name, recordHistory=true){
+  if(!pageTitles[name]) name='request';
+  if(!Object.prototype.hasOwnProperty.call(pageTitles,name)) name='request';
+  _oldTab(name);
+  document.getElementById('crumbName').textContent=pageTitles[name];
+  if(recordHistory && location.hash!=='#'+name) history.pushState({page:name},'', '#'+name);
+  window.scrollTo({top:0,behavior:'instant'});
+}
+tab=function(name){ if(!pageTitles[name]) name='request'; navigateToPage(name,true); };
+for(const a of document.querySelectorAll('.nav')){
+  a.onclick=e=>{e.preventDefault();tab(a.dataset.tab);};
+}
+window.addEventListener('popstate',()=>navigateToPage(location.hash.slice(1),false));
+window.addEventListener('hashchange',()=>navigateToPage(location.hash.slice(1),false));
+if(location.hash && pageTitles[location.hash.slice(1)]) navigateToPage(location.hash.slice(1),false);
+else navigateToPage('request',false);
+function newQuote(){currentOfferId=null;lines=[];$('confirmQuotePrices').checked=false;document.getElementById('customer').value='';document.getElementById('requestText').value='';document.getElementById('requestFile').value='';document.getElementById('chosenFile').textContent='';document.getElementById('offerNote').value='Fiyatlar KDV hariçtir.';document.getElementById('readStatus').textContent='';document.getElementById('currency').value='TRY';document.getElementById('offerDate').value=new Date().toLocaleDateString('en-CA');tab('request');}
+const quoteFile=document.getElementById('requestFile');
+quoteFile.addEventListener('change',()=>{document.getElementById('chosenFile').textContent=quoteFile.files[0]?.name||'';});
+const dropZone=document.getElementById('requestDrop');
+['dragenter','dragover'].forEach(evt=>dropZone.addEventListener(evt,e=>{e.preventDefault();dropZone.classList.add('dragging')}));
+['dragleave','drop'].forEach(evt=>dropZone.addEventListener(evt,e=>{e.preventDefault();dropZone.classList.remove('dragging')}));
+dropZone.addEventListener('drop',e=>{if(e.dataTransfer.files.length){quoteFile.files=e.dataTransfer.files;quoteFile.dispatchEvent(new Event('change'));}});
+
+bootstrapPersistence();
+</script>
+<script>
+/* Kalde Catalog Import v2 — PDF/XLSX/CSV preview, safe commit, diagnostics */
+let pendingCatalog = null;
+const CATALOG_PREVIEW_LIMIT = 25;
+const catalogPages = {safe:0,risky:0};
+const catalogText = value => String(value ?? '').replace(/\s+/g,' ').trim();
+const catalogPrice = value => {
+  if (typeof value === 'number') return Number.isFinite(value) && value >= 0 ? value : null;
+  let s = String(value ?? '').trim();
+  if (!s || /^(?:-|—|yok|sorunuz|teklif|\*)$/i.test(s)) return null;
+  s = s.replace(/(?:₺|tl|try|eur|usd|\$|€)/gi,'').replace(/\s/g,'').replace(/[^\d.,-]/g,'');
+  if (!/^-?\d[\d.,]*$/.test(s)) return null;
+  if (s.includes(',') && s.includes('.')) {
+    const pos = Math.max(s.lastIndexOf(','),s.lastIndexOf('.'));
+    const integer=s.slice(0,pos).replace(/[.,]/g,''), fraction=s.slice(pos+1);
+    s=integer+'.'+fraction;
+  } else if (s.includes(',') || s.includes('.')) {
+    const sep=s.includes(',')?',':'.';
+    const splits=s.split(sep);
+    if (splits.length>2) s=s.replace(new RegExp('\\'+sep,'g'),'');
+    else if(splits[1]?.length===3 && splits[0].length<=3) s=splits.join('');
+    else if(splits[1]?.length<=2) s=splits.join('.');
+    else s=splits.join('');
+  }
+  const number=Number(s);
+  return Number.isFinite(number) && number>=0 ? number : null;
+};
+const catalogMoney = amount => amount === null || amount === undefined ? 'Fiyat girilmedi' : money(amount);
+// Price belongs to its own field, never to the product's description.
+function cleanCatalogProductName(raw){
+ // Numeric dimensions are sacred: 110 may happen to equal the list price!
+ // Remove only explicit currency-labelled money, never a bare number.
+ return catalogText(raw).replace(/\s+(?:₺\s*)?\d[\d.,]*\s*(?:TL|TRY|₺|EUR|USD)\s*$/i,'').replace(/^[\s\-•:]+|[\s\-•:]+$/g,'').slice(0,250);
+}
+// Never mistake "50x1000", "90°" or "1/2" for packaging data.
+// For older PDF imports we only clean clearly-labelled metadata or TWO extra numeric
+// columns following a full product dimension; ambiguous single numbers stay unchanged.
+function stripImportedNameMetadata(raw, section=''){
+ let name=catalogText(raw);
+ if(!name)return name;
+ const labeled=/(?:\s*[,;|–-]?\s*(?:koli\s*(?:ici|adedi|miktari|miktarı)?|kolide\s*(?:adet)?|ambalaj\s*(?:miktari|miktarı|adedi)?|paket\s*(?:adedi|ici|içi)?|1\s*boy\s*(?:uzunlu[gğ]u|metre|mt|m)?|boy\s*uzunlu[gğ]u)\s*[:=]?\s*\d+(?:[.,]\d+)?\s*(?:adet|ad|m|mt|metre|boy)?\s*)$/i;
+ for(let i=0;i<3;i++){const next=name.replace(labeled,'').trim();if(next===name)break;name=next;}
+ // PDF visual extraction sometimes exports "50x1000 20 4" (dimension / case quantity / piece length).
+ // This is ONLY safe for a dimension followed by two bare numeric technical columns.
+ const dimensional=name.match(/^((?:(?:DN|Ø|ø)\s*)?\d{1,5}(?:\s*[x×X/*]\s*\d{1,5}){1,3}(?:\s*mm)?)\s+\d{1,4}\s+\d{1,3}(?:[.,]\d+)?\s*(?:m|mt|metre)?$/i);
+ if(dimensional && section)name=dimensional[1];
+ // If technical fields were appended after the heading, remove them only if both are present.
+ const heading=String(section||'').trim();
+ if(heading){
+  const lower=name.toLocaleLowerCase('tr-TR'),lowerHeading=heading.toLocaleLowerCase('tr-TR');
+  const index=lower.lastIndexOf(' '+lowerHeading+' ');
+  if(index>=0 && /\d/.test(name.slice(0,index)) && /^\d{1,4}\s+\d{1,3}(?:[.,]\d+)?(?:\s*(?:m|mt|metre))?$/i.test(name.slice(index+heading.length+2)))name=name.slice(0,index)+' '+heading;
+  // Legacy version appended the PDF heading AFTER unwanted packaging columns.
+  else if(lower.endsWith(' '+lowerHeading)){
+   const prefix=name.slice(0,-heading.length-1).trim();
+   const match=prefix.match(/^((?:(?:DN|Ø|ø)\s*)?\d{1,5}(?:\s*[x×X/*]\s*\d{1,5}){1,3}(?:\s*mm)?)\s+\d{1,4}\s+\d{1,3}(?:[.,]\d+)?\s*(?:m|mt|metre)?$/i);
+   if(match)name=match[1]+' '+prettyCatalogTitle(heading);
+  }
+ }
+ return name;
+}
+function bareCatalogDimension(raw){
+ const s=catalogText(raw);
+ return /^(?:(?:ø|Ø|dn|DN)\s*)?\d{1,5}(?:\s*[x×X\/*]\s*\d{1,5}){0,3}(?:\s*(?:mm|cm|mt|m|inç|inch|''|"))?$/i.test(s);
+}
+function prettyCatalogTitle(raw){
+ const text=catalogText(raw);
+ // Uppercase PDF headings are converted to readable case in each product name.
+ return text.split(' ').map(word=>/^(?:PP|PP-R|PPR|PPRC|PVC|PVC-U|PE|PE-RT|PEX|HDPE|FR|DN|TS|EN|PN|SDR|SN)$/i.test(word)?word.toLocaleUpperCase('tr-TR'):/\d|[-\/]/.test(word)?word:word===word.toLocaleUpperCase('tr-TR')?word.charAt(0).toLocaleUpperCase('tr-TR')+word.slice(1).toLocaleLowerCase('tr-TR'):word).join(' ');
+}
+function completeCatalogName(raw, section, price=null){
+ const name=cleanCatalogProductName(raw,price), heading=catalogText(section);
+ if(!heading)return name;
+ if(bareCatalogDimension(name)||(/^\d{1,4}(?:\s+\d{1,4}){1,2}$/.test(name)&&isProductContext(heading)))return catalogText(name+' '+prettyCatalogTitle(heading));
+ // Description is already meaningful; avoid duplicating the whole section heading.
+ if(norm(name).includes(norm(heading)))return name;
+ return name;
+}
+// PDF'de ana sistem başlığı ("Sessiz Boru Sistemleri") bir ürün türü değildir.
+// Satır türü belirtilmemişse ana başlıktan "Boru" türetmek, ek parçaları bozuyordu.
+function catalogFamilyHeading(raw){
+ const t=norm(raw);
+ return /\b(?:sistemleri|sistemi|sistem|urun gruplari|urun ailesi|fiyat listesi|ek parcalar|ek parcalari|fittings|aksesuarlar|urunler)\b/.test(t) ||
+        /\bboru\s+(?:ve|&|ile)\s+(?:ek|baglanti|fittings|parca)\b/.test(t) ||
+        /^(?:(?:kalde )?mute (?:3k|fr)|(?:3k )?sessiz boru)$/.test(t);
+}
+const CATALOG_TYPE_RULES=[
+ ['Çift Çatal',/\b(?:cift|ikili)\s+catal\b/],
+ ['Çatal',/\b(?:catal|catal\s+te|y\s+catal)\b/],
+ ['Dirsek',/\b(?:dirsek|dirsekler|kavis|elbow)\b/],
+ ['Sürgülü Manşon',/\b(?:surgulu|kaydirma)\s+manson\b/],
+ ['Manşon',/\b(?:manson|mansonlar|muf|muflu|soket|kaplin)\b/],
+ ['Redüksiyon',/\b(?:reduksiyon|redoksiyon|rediksiyon|dusurucu)\b/],
+ ['Temizleme Parçası',/\b(?:temizleme|kontrol kapag[iı]|kontrol parcasi)\b/],
+ ['Te',/\b(?:te|te parca|t parca|tee|te baglanti)\b/],
+ ['Kelepçe',/\b(?:kelepce|ask(i|ı) aparati)\b/],
+ ['Adaptör',/\b(?:adaptor|adapt[oö]r)\b/],
+ ['Geçiş Parçası',/\b(?:gecis|donusum)\b/],
+ ['Conta',/\b(?:conta|s(e|i)zd(i|ı)rmazl(i|ı)k halkasi)\b/],
+ ['Kapak',/\b(?:kor tapa|tapa|kapak|kor kapak)\b/],
+ ['Vana',/\b(?:vana|vanasi|valf|valve)\b/],
+ ['Radyatör',/\b(?:radyator|radiator|panel radyator)\b/],
+ ['Kollektör',/\b(?:kollektor|manifold)\b/],
+ ['Rekor',/\b(?:rekor|rakor|union)\b/],
+ ['Nipel',/\b(?:nipel|nipple)\b/],
+ ['Çekvalf',/\b(?:cekvalf|check valve)\b/],
+ ['Süzgeç',/\b(?:suzgec|filtre|strainer)\b/],
+ ['Sifon',/\b(?:sifon|trap)\b/],
+ ['S Parçası',/\bs\s*(?:87|90)(?:\s*derece)?\b|\bs\s+parcasi\b/],
+ ['Boru',/\b(?:boru|borular|borusu|pipe)\b/]
+];
+function catalogSpecificType(raw,fromHeading=false){
+ const t=norm(raw);
+ if(!t)return '';
+ if(fromHeading&&catalogFamilyHeading(raw))return '';
+ if(/\bboru\b/.test(t)&&/\bmuflu\b/.test(t))return 'Boru';
+ for(const [title,re] of CATALOG_TYPE_RULES)if(re.test(t))return title;
+ return '';
+}
+function catalogPipeLengthDimension(raw){
+ const t=catalogText(raw);
+ const x=t.match(/(?:^|\s)(?:Ø\s*|DN\s*)?(\d{2,4})\s*[x×X]\s*(\d{3,5})(?:\s*(?:mm|m))?(?:\s|$)/i);
+ return !!(x&&Number(x[2])>=300); // E.g. 50x1000: length, not 110x110 branch size.
+}
+function catalogFamilyDisplay(raw){
+ const t=norm(raw);
+ if(/\b(?:sessiz|mute 3k|mute fr)\b/.test(t))return 'Sessiz Boru';
+ if(/\b(?:pvc|pimas)\b/.test(t))return 'PVC-U Boru';
+ if(/\b(?:pp|ppr|pprc)\b/.test(t))return 'PP Boru';
+ return 'Boru';
+}
+function catalogResolveRowProduct(raw,heading='',family=''){
+ const base=catalogText(raw),h=catalogText(heading),f=catalogText(family);
+ const explicitType=catalogSpecificType(base);
+ const headingType=catalogSpecificType(h,true);
+ let type=explicitType||headingType;
+ const issues=[];
+ const sourceFamily=f||((catalogFamilyHeading(h))?h:'');
+ const onlySize=bareCatalogDimension(base)||/^\d{2,4}\s+\d{2,4}$/.test(base);
+ // A family title cannot dictate that every diameter is a pipe.
+ if(!type&&catalogPipeLengthDimension(base))type='Boru';
+ if(!type&&onlySize)issues.push('Ürün tipi belirsiz: PDF alt başlığı (boru / dirsek / çatal / manşon) tanınamadı');
+ if(!type&&!onlySize&&!isProductContext(base))issues.push('Ürün tipi belirlenemedi; kaynak alt başlık gerekli');
+ let label=h;
+ if(type&&(!headingType||headingType!==type)){
+  label=(sourceFamily?sourceFamily+' / ':'')+type;
+ }
+ const containsOwnType=!!explicitType;
+ let name=base;
+ if(!containsOwnType&&onlySize&&type){
+  const genericPipe=type==='Boru'&&/^(?:boru|borular|pipe)$/.test(norm(h));
+  const typeName=headingType===type&&!catalogFamilyHeading(h)&&!genericPipe ? prettyCatalogTitle(h) : (type==='Boru'&&sourceFamily?catalogFamilyDisplay(sourceFamily):type);
+  name=catalogText(base+' '+typeName);
+ }else if(!containsOwnType&&type&&bareCatalogDimension(base)){
+  name=catalogText(base+' '+type);
+ }
+ // Prevent the old "110 Sessiz Boru Sistemleri" false product entirely.
+ if(catalogFamilyHeading(name)&&!containsOwnType&&onlySize&&!(type==='Boru'&&catalogPipeLengthDimension(base))){issues.push('Ana sistem başlığı, ürün tipi olarak kullanılamaz');}
+ return {name,section:label||h||f,type,issues};
+}
+function pdfProductHeader(line){
+ const name=catalogText(line.text), normalized=norm(name);
+ if(!name||name.length>100||name.split(/\s+/).length>11||skipPdfLine(name)||(findSku(name)&&!/^kalde[ -]?mute\b/i.test(name))||isPriceToken(name)||/^(?:\d|[Øø]\s*\d)/.test(name))return false;
+ if(pdfKey(name))return false;
+ const numberCount=(name.match(/\b\d+(?:[.,]\d+)?\b/g)||[]).length;
+ // A product line with size/diameter is not a subheading.
+ if(numberCount>=2 && !/\b(?:pn|sdr|sn)\b/.test(normalized))return false;
+ const type=catalogSpecificType(name),family=catalogFamilyHeading(name);
+ const knownBrandCaption=/^kalde[ -]?mute\s*3k\b/i.test(norm(name));
+ if(!type&&!family&&!knownBrandCaption)return false;
+ if(numberCount>=1 && !/\b(?:45|67|87|88|90|30|15)\b/.test(normalized) && !/\b(?:pn|sdr|sn)\b/.test(normalized))return false;
+ const letters=name.replace(/[^A-Za-zÇĞİÖŞÜçğıöşü]/g,'');
+ const caps=letters&&letters===letters.toLocaleUpperCase('tr-TR');
+ const fontProminent=(line.items||[]).some(it=>it.height>=10.3);
+ return !!(caps||fontProminent||family&&numberCount===0||type&&numberCount===0&&name.split(/\s+/).length<=4);
+}
+
+const isSku = v => /^(?:[0-9]{3,6}[-._][a-z0-9]{2,8}[-._][a-z0-9]{3,12}|[a-z]{1,5}[-._][a-z0-9-]{5,}|[0-9]{6,15})$/i.test(catalogText(v));
+const findSku = text => {
+  const match=String(text).match(/\b(?:\d{3,6}[-._][a-z0-9]{2,8}[-._][a-z0-9]{3,12}|[a-z]{1,5}[-._][a-z0-9-]{5,}|\d{7,15})\b/i);
+  return match?.[0] || '';
+};
+const isPriceToken = s => /(?:\d[.,]\d{2}(?!\d)|[₺€$]|\bTL\b|\bTRY\b)/i.test(s);
+const numberOrNull = v => v === null || v === undefined || String(v).trim()==='' ? null : catalogPrice(v);
+function pdfKey(s){
+  const k=norm(s);
+  if(/(?:stok\s*kod|urun\s*kod|malzeme\s*kod|stok\s*no|sku|^kod$|^code$)/.test(k))return 'code';
+  if(/(?:urun\s*adi|malzeme\s*adi|urun\s*tanim|aciklama|description|product\s*name|^urun$|^product$|^tanimi$)/.test(k))return 'name';
+  if(/(?:liste\s*fiyat|birim\s*fiyat|^fiyat|\bprice\b|satis\s*fiyati|^tl$)/.test(k))return 'price';
+  if(/(?:1\s*boy|boy\s*uzunlug|boy\s*mt|boy\s*metre|boy\s*olcus|boy\s*boyu|tek\s*boy)/.test(k))return 'length';
+  if(/(?:olcu|cap|ebat|boyut|dimension|size|^dn$)/.test(k))return 'size';
+  if(/(?:urun\s*grup|kategori|category)/.test(k))return 'group';
+  if(/(?:^birim$|unit)/.test(k))return 'unit';
+  if(/(?:koli|paket\s*(?:ici|adedi|adet)|ambalaj|kutu|karton|kolide)/.test(k))return 'package';
+  if(/(?:koli|paket|urun)\s*(?:ici\s*)?adet|^adet$|^miktar$|quantity/.test(k))return 'quantity';
+  if(/(?:agirlik|weight|kilogram)/.test(k))return 'weight';
+  return null;
+}
+function catalogMaterial(t){
+ const n=norm(t);
+ if(/(?:^|\s)(?:pvc|pimas|pimaş)(?:\s|$)/.test(n))return 'PVC';
+ if(/(?:^|\s)(?:pp|ppr|pprc)(?:\s|$)/.test(n))return 'PP';
+ return '';
+}
+function detectCatalogGroup(text){
+ const t=norm(text);
+ if(/\b(?:inflex|esnek dogalgaz|flex gaz)\b/.test(t))return 'İnflex';
+ if(/\b(?:dogalgaz vanasi|dogalgaz vana|kilitli gaz vanasi|gaz vanasi)\b/.test(t))return 'Doğalgaz Vanası';
+ if(/\b(?:kollektor|manifold)\b/.test(t))return 'Kollektör';
+ if(/\b(?:koruge|koruge boru)\b/.test(t))return 'Koruge Boru';
+ if(/\b(?:fr pvc|alev geciktirici)\b/.test(t))return 'FR PVC';
+ if(/\b(?:pp r ek parca|pprc fitting)\b/.test(t))return 'PP-R Ek Parça';
+ if(/\b(?:pvc u ek parca|pimas fitting)\b/.test(t))return 'PVC-U Ek Parça';
+ if(/\b(?:sessiz|mute 3k|mute fr)\b/.test(t))return 'Sessiz Boru';
+ if(/\b(?:pp r|ppr|pprc)\b/.test(t))return 'PP-R';
+ if(/\b(?:pvc u|pimas|pis su)\b/.test(t))return 'PVC-U';
+ if(/\b(?:pe rt|pex|pe x)\b/.test(t))return 'PE-RT / PEX';
+ if(/\b(?:kuresel vana|metal vana)\b/.test(t))return 'Metal Vana';
+ if(/\b(?:plastik vana)\b/.test(t))return 'Plastik Vana';
+ if(/\b(?:radyator|radiator)\b/.test(t))return 'Radyatör';
+ if(/\b(?:sulama)\b/.test(t))return 'Sulama Sistemleri';
+ if(/\b(?:elektrik tesisat|elektrik boru)\b/.test(t))return 'Elektrik Tesisat Boruları';
+ if(/\b(?:pe 100|pe boru|polietilen boru)\b/.test(t))return 'PE Boru';
+ return '';
+}
+function isProductContext(t){
+  const n=norm(t);
+  return n.length>=2 && n.length<115 && /\b(?:boru|dirsek|manson|vana|kollektor|radyator|te|rediksiyon|nipel|rekor|duble|kose|adapt[oö]r|kapak|kavis|cekvalf|conta|suzgec|fittings|baca|yagmur|soket|koruge|kuresel|hat|muf|gecis|kelepce)\b/.test(n) &&
+      !/\b(?:kalde|web|fiyat listesi|www|teknik ozellik|icerik|indeks|kullanim|garanti|teslimat|tel|faks|sertifika)\b/.test(n);
+}
+const skipPdfLine = t => {
+ const v=norm(t);
+ return !v || /^(?:sayfa\s*\d+|page\s*\d+|www\b|kalde$|stok kodu|stok no|urun adi|urun kodu|fiyat listesi|liste fiyati|malzeme adi|ambalaj miktari|olcu cap|birim fiyati)/.test(v) ||
+   /(?:@|https?:|www\.|tel\s*[:.]|fax\s*[:.])/.test(t) || /^\d{1,3}\s*(?:\/\s*\d{1,3})?$/.test(t);
+};
+function pdfVisualLines(content){
+ const tokens=[];
+ for(const it of content.items||[]){
+  const str=catalogText(it.str);if(!str)continue;
+  tokens.push({text:str,x:Number(it.transform?.[4]||0),y:Number(it.transform?.[5]||0),width:Number(it.width||0),height:Math.abs(Number(it.transform?.[3]||it.height||10))});
+ }
+ tokens.sort((a,b)=>b.y-a.y||a.x-b.x);
+ const rows=[];
+ for(const item of tokens){
+  const tolerance=Math.min(3.6,Math.max(2.3,item.height*.29));
+  let row=rows[rows.length-1];
+  if(!row || Math.abs(row.y-item.y)>tolerance){row={y:item.y,items:[],text:''};rows.push(row);}
+  row.items.push(item);
+ }
+ for(const row of rows){row.items.sort((a,b)=>a.x-b.x); row.text=row.items.map(it=>it.text).join(' ').replace(/\s+/g,' ').trim();}
+ return rows;
+}
+function detectPdfColumns(row){
+ const out={};
+ for(let i=0;i<row.items.length;i++){const item=row.items[i];let key=pdfKey(item.text);if(!key&&i<row.items.length-1){const next=row.items[i+1];if(next.x-item.x-item.width<14)key=pdfKey(item.text+' '+next.text);}if(key && out[key]===undefined)out[key]=item.x;}
+ // Entire header may be one text run: position information isn't useful in that case.
+ return Object.keys(out).length>=2 ? out : null;
+}
+function layoutCells(items, columns){
+ if(!columns)return null;
+ const seq=Object.entries(columns).sort((a,b)=>a[1]-b[1]);
+ const out={};
+ for(const it of items){
+  let index=0;
+  for(let i=1;i<seq.length;i++)if(it.x >= (seq[i-1][1]+seq[i][1])/2) index=i;
+  const field=seq[index][0];out[field]=(out[field]?out[field]+' ':'')+it.text;
+ }
+ return out;
+}
+function cleanedName(name){return catalogText(name).replace(/^[\s\-•:]+|[\s\-•:]+$/g,'').slice(0,250)}
+function normalizeUnit(v){const t=norm(v);if(/^(?:m|mt|metre|meter)$/.test(t))return 'metre';if(/^(?:boy)$/.test(t))return 'boy';if(/^(?:kg)$/.test(t))return 'kg';if(/^(?:paket|pk)$/.test(t))return 'paket';return 'adet'}
+
+// Product text must not swallow adjacent price / package / length columns.
+// Uncertain trailing numbers are quarantined, not silently moved into price or name.
+function splitDimensionsAndPackaging(raw,section='',knownPackage='',knownLength=''){
+ let name=catalogText(raw),packageQty=catalogText(knownPackage),lengthPerPiece=catalogText(knownLength),reason='';
+ if(!name)return {name,packageQty,lengthPerPiece,reason};
+ const labeled=/(?:\s*[,;|–-]?\s*(?:koli\s*(?:ici|içi|adedi|miktarı|miktari)?|ambalaj\s*(?:miktarı|miktari|adedi)?|kolide\s*(?:adet)?|paket\s*(?:adedi|ici|içi)?)\s*[:=]?\s*)(\d{1,5})\s*(?:adet|ad)?\s*$/i;
+ const lm=name.match(labeled);if(lm){packageQty=packageQty||lm[1];name=name.slice(0,lm.index).trim();}
+ const boy=name.match(/(?:\s*[,;|–-]?\s*(?:1\s*boy\s*(?:uzunluğu|uzunlugu)?|boy\s*uzunluğu|boy\s*uzunlugu)\s*[:=]?\s*)(\d+(?:[.,]\d+)?)\s*(?:m|mt|metre)?\s*$/i);
+ if(boy){lengthPerPiece=lengthPerPiece||boy[1];name=name.slice(0,boy.index).trim();}
+ // Strict confirmation from a distinct cell: safe to remove redundant copy at end.
+ for(const v of [lengthPerPiece,packageQty]){
+  if(v&&name.endsWith(' '+v))name=name.slice(0,-v.length).trim();
+ }
+ // Common price-list layout: 50x1000 20 4 = dimension / pack / piece length.
+ // Apply only to pipe/dimension rows, never a generic product with three sizes.
+ const pipe=/\b(?:boru|pipe)\b/i.test((section+' '+name).toLocaleLowerCase('tr-TR'));
+ // Prefix is allowed (PVC-U BORU 50x1000 20 4). The final two numbers
+ // are packaging/length ONLY in the pipe dimension layout.
+ const tube=name.match(/^(.*?)(\d{2,5}\s*[x×X]\s*\d{2,5})\s+(\d{1,4})\s+(\d{1,3}(?:[.,]\d+)?)$/i);
+ if(pipe&&tube&&(!packageQty||packageQty===tube[3])&&(!lengthPerPiece||lengthPerPiece===tube[4])){
+  name=catalogText(tube[1]+tube[2]);packageQty=tube[3];lengthPerPiece=tube[4];
+ } else if(pipe&&tube){reason='Boru koli adedi / boy uzunluğu kaynak hücreyle uyuşmuyor';}
+ // Elbow with explicit angle + diameter + carton quantity.
+ // PP Dirsek 45 110 6 -> PP Dirsek 45 110 (pack=6).
+ const elbowType=/\b(?:dirsek|elbow|kavis)\b/i.test(norm(section+' '+name));
+ const elbow=name.match(/^(.*?(?:[dD][iİıI][rR][sS][eE][kK]|elbow|kavis)\b[^\d]*)(45|87|88|90|67|30|15)\s*[°º]?\s+(\d{2,4})\s+(\d{1,4})$/i);
+ if(elbowType&&elbow&&!packageQty){
+  const diameter=Number(elbow[3]),pack=Number(elbow[4]);
+  if(diameter>=20&&diameter<=1200&&pack>0&&pack<=500){name=catalogText(elbow[1]+elbow[2]+' '+elbow[3]);packageQty=elbow[4];}
+ }
+ // Dimension + pack under a named elbow heading (e.g. PP DİRSEK 45).
+ const ctxAngle=/\b(?:dirsek|elbow|kavis)\b.*\b(?:45|87|88|90|67|30|15)\b/i.test(norm(section));
+ const underHeading=name.match(/^(\d{2,4})\s+(\d{1,3})$/);
+ if(ctxAngle&&underHeading&&!packageQty&&Number(underHeading[1])>=20&&Number(underHeading[2])<=500){
+  name=underHeading[1];packageQty=underHeading[2];
+ }
+ // Residual trailing bare quantities after the actual dimensions are suspicious.
+ // Never import an uncertain row until it has a reliable column interpretation.
+ const nums=(name.match(/\b\d+(?:[.,]\d+)?\b/g)||[]);
+ if(!packageQty && nums.length>=3 && /\b(?:dirsek|elbow|kavis|boru|tee|te|redüksiyon|reduksiyon)\b/i.test(norm(section+' '+name)) && /\s+\d{1,4}$/.test(name))
+  reason='Ürün adının sonundaki sayı koli/ölçü olabilir; otomatik kaydedilmeyecek';
+ return {name:catalogText(name),packageQty,lengthPerPiece,reason};
+}
+function pdfItemFromLine(line,columns,context,page,recognizedHeader,group,family=''){
+ const raw=line.text;
+ // Page number/footer is often a bare 1–3 digit number in far right margin.
+ // It must NEVER become '17 Dirsek' or receive a price from stale column coordinates.
+ if(/^\d{1,3}$/.test(raw)&&line.items?.length===1&&(line.items[0].x>400||line.y<60))return null;
+ if(recognizedHeader || (skipPdfLine(raw)&&!(bareCatalogDimension(raw)&&catalogText(context))))return null;
+ const cell=layoutCells(line.items,columns)||{};
+ const code=findSku(cell.code||'')||findSku(raw);
+ let name=catalogText(cell.name||cell.size||''),unit=normalizeUnit(cell.unit||'');
+ let price=null,priceVerified=false,issues=[];
+ if(columns?.price!==undefined){
+  const v=catalogText(cell.price||'');
+  if(v){
+   if(/^(?:₺\s*|TL\s*)?\d[\d.,]*(?:\s*(?:TL|TRY|₺))?$/i.test(v)){
+    price=numberOrNull(v);priceVerified=price!==null;
+   }else issues.push('Fiyat sütunu net okunamadı');
+  }
+ }
+ if(!name){
+  name=catalogText(code?raw.replace(code,' '):raw);
+  const end=name.match(/\s+\d[\d.,]*\s*(?:TL|TRY|₺)\s*$/i);
+  if(end){name=name.slice(0,end.index).trim();issues.push('Fiyat ayrı sütunda doğrulanamadı');}
+ }
+ const heading=catalogText(context||'');
+ const fields=splitDimensionsAndPackaging(name,heading,cell.package||cell.quantity||'',cell.length||'');
+ name=fields.name;
+ if(fields.reason)issues.push(fields.reason);
+ const size=catalogText(cell.size||'');
+ if(size&&!norm(name).includes(norm(size)))name=catalogText(name+' '+size);
+ const baseName=cleanCatalogProductName(name);
+ const resolved=catalogResolveRowProduct(baseName,heading,family);
+ issues.push(...resolved.issues);
+ name=resolved.name;
+ if(!name||name.length<2)return null;
+ if(!code&&!/\d/.test(name)&&price===null)return null;
+ if(/^(?:stok|ambalaj|tablo|kampanya|toplam|sira|adet|koli|kod)\b/i.test(norm(name)))return null;
+ if(!code&&!resolved.type&&!isProductContext(name)&&!bareCatalogDimension(baseName))return null;
+ if(!columns){
+  if(/\b\d+\s+\d+\s+\d+(?:[.,]\d+)?\s*$/.test(name))issues.push('Tablo sütun başlıkları bulunamadı');
+  if(/\s+\d[\d.,]*\s*(?:TL|TRY|₺)\s*$/i.test(raw))issues.push('Fiyat sütunu belirsiz');
+ }
+ return {code,name,baseName,section:resolved.section,price,priceVerified,unit,packageQty:fields.packageQty,lengthPerPiece:fields.lengthPerPiece,group:detectCatalogGroup(name)||detectCatalogGroup(heading)||detectCatalogGroup(family)||group||'',page,raw,origin:'PDF',issues};
+}
+function catalogParsePdfRows(rows,page,state){
+ const parsed=[];
+ for(let ri=0;ri<rows.length;ri++){
+  const r=rows[ri];
+  const keys=r.items.map(x=>pdfKey(x.text)).filter(Boolean);
+  const detectedGroup=detectCatalogGroup(r.text);
+  const header=keys.includes('code') && (keys.includes('name')||keys.includes('price')||keys.includes('size')||keys.includes('package')) || keys.includes('name')&&keys.includes('price');
+  const joinedHeader=/\b(?:stok\s*kodu|malzeme\s*kodu)\b/.test(norm(r.text)) && /\b(?:fiyat|urun|olcu|cap)\b/.test(norm(r.text));
+  if(header||joinedHeader){
+   // Kalde PDF price sheets wrap some column titles over 2 lines:
+   // 'Ambalaj Miktarı /' sits ~5 pt above 'Kod / Ölçü / Fiyat',
+   // while 'Poşet İçi' is ~5 pt below. Merge the HEADER BAND only.
+   const bandItems=[...r.items];
+   for(let offset=-2;offset<=2;offset++){
+    if(!offset)continue;
+    const adjacent=rows[ri+offset];
+    if(!adjacent || Math.abs(adjacent.y-r.y)>10)continue;
+    const headerParts=adjacent.items.filter(it=>pdfKey(it.text)!==null);
+    bandItems.push(...headerParts);
+   }
+   state.columns=detectPdfColumns({items:bandItems});
+   continue;
+  }
+  if(pdfProductHeader(r)){
+   const nextHeading=cleanedName(r.text);
+   const isFamily=catalogFamilyHeading(nextHeading);
+   if(isFamily){
+    state.family=nextHeading;
+    state.context=nextHeading;
+   }else{
+    const newMaterial=catalogMaterial(nextHeading), oldFamilyMaterial=catalogMaterial(state.family||'');
+    if(newMaterial && (newMaterial!==oldFamilyMaterial))state.family='';
+    state.context=nextHeading;
+   }
+   // Alt başlıklar aynı tabloda devam edebilir: fiyat/koli sütunlarını kaybetme.
+   // Ana sistem ailesi değiştiğinde eski tablo koordinatlarını sıfırla.
+   if(isFamily)state.columns=null;
+   state.group=detectCatalogGroup(nextHeading)||detectCatalogGroup(state.family||'')||'';
+   continue;
+  }
+  if(detectedGroup&&(!state.group||catalogFamilyHeading(r.text)))state.group=detectedGroup;
+  const item=pdfItemFromLine(r,state.columns,state.context,page,false,state.group,state.family||'');
+  if(item)parsed.push(item);
+ }
+ return parsed;
+}
+
+async function catalogOCR(page, pageNo, state){
+ if(!window.Tesseract)throw new Error('Taranmış PDF için OCR kütüphanesi yüklenemedi. İnternet bağlantısını kontrol edin.');
+ const vp=page.getViewport({scale:1.75}),c=document.createElement('canvas');
+ c.width=Math.ceil(vp.width);c.height=Math.ceil(vp.height);
+ await page.render({canvasContext:c.getContext('2d',{willReadFrequently:true}),viewport:vp}).promise;
+ let result;
+ try{result=await Tesseract.recognize(c,'tur+eng',{logger:e=>{if(e.status)$('catalogStatus').textContent=`Sayfa ${pageNo}: OCR — ${e.status} ${Math.round((e.progress||0)*100)}%`;}})}
+ catch(err){state.warnings.push(`Sayfa ${pageNo}: Türkçe OCR çalışmadı, İngilizce deneniyor.`);result=await Tesseract.recognize(c,'eng');}
+ return result.data.text.split(/\r?\n/).map((s,i)=>({text:catalogText(s),y:1000-i*15,items:[{text:catalogText(s),x:0,y:1000-i*15,width:300,height:12}]})).filter(x=>x.text);
+}
+async function catalogReadPDF(file){
+ if(!window.pdfjsLib)throw new Error('PDF okuyucu yüklenemedi. İnternet bağlantısını kontrol edin.');
+ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+ const documentPdf=await pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
+ const state={columns:null,context:'',family:'',group:'',warnings:[],rows:[],samples:[],totalPages:documentPdf.numPages,scanned:0};
+ try{
+  for(let p=1;p<=documentPdf.numPages;p++){
+   $('catalogStatus').textContent=`PDF okunuyor: ${p}/${documentPdf.numPages} sayfa…`;
+   const page=await documentPdf.getPage(p), content=await page.getTextContent();
+   let visual=pdfVisualLines(content);const charCount=visual.map(x=>x.text).join(' ').length;
+   if(charCount<45){
+    if(state.scanned>=30){state.warnings.push(`Sayfa ${p}: taranmış PDF'de OCR sınırı (30 sayfa) nedeniyle atlandı.`);continue;}
+    state.scanned++;
+    try{visual=await catalogOCR(page,p,state);}catch(err){state.warnings.push(`Sayfa ${p}: OCR başarısız — ${err.message}`);continue;}
+   }
+   if(state.samples.length<16)state.samples.push(...visual.map(r=>`Sayfa ${p}: ${r.text}`).filter(Boolean).slice(0,16-state.samples.length));
+   state.rows.push(...catalogParsePdfRows(visual,p,state));
+  }
+ }finally{await documentPdf.destroy?.();}
+ return state;
+}
+
+function catalogRowsFromSheet(sheet,sheetName){
+ const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''}),results=[];
+ let columns=null,section='',skipped=0;
+ for(const raw of rows){
+  if(!raw||!raw.some(x=>catalogText(x)))continue;
+  const vals=raw.map(catalogText), header=vals.map(v=>pdfKey(v)||headerKey(v));
+  if(header.includes('name')||(header.includes('code')&&header.includes('size'))){columns=header;continue;}
+  if(vals.filter(Boolean).length===1&&!findSku(vals.find(Boolean))&&isProductContext(vals.find(Boolean))){section=vals.find(Boolean);continue;}
+  if(!columns){skipped++;continue;}
+  const cell={};columns.forEach((h,i)=>{if(h&&cell[h]===undefined)cell[h]=raw[i];});
+  let code=catalogText(cell.code||''),name=catalogText(cell.name||cell.size||'');
+  if(!name){skipped++;continue;}
+  let issues=[];
+  let price=null;
+  if(cell.price!==undefined&&catalogText(cell.price)){
+   const v=catalogText(cell.price);
+   if(!/^(?:₺\s*|TL\s*)?\d[\d.,]*(?:\s*(?:TL|TRY|₺))?$/i.test(v))issues.push('Fiyat sütunu net okunamadı');
+   else price=numberOrNull(cell.price);
+  }
+  const label=catalogText(cell.group||'');
+  const heading=(CATALOG_CATEGORIES.some(c=>norm(c)===norm(label))?'':label)||section||sheetName;
+  if(/^sheet\s*\d+$/i.test(heading)&&bareCatalogDimension(name))issues.push('Yalnız ölçü var; gerçek ürün üst başlığı bulunamadı');
+  const cleaned=splitDimensionsAndPackaging(name,heading,cell.package||cell.quantity||'',cell.length||'');
+  if(cleaned.reason)issues.push(cleaned.reason);
+  name=cleaned.name;
+  const size=catalogText(cell.size||'');
+  if(size&&!norm(name).includes(norm(size)))name=catalogText(name+' '+size);
+  const baseName=cleanCatalogProductName(name,price);
+  const resolved=catalogResolveRowProduct(baseName,heading,catalogFamilyHeading(heading)?heading:'');
+  issues.push(...resolved.issues);
+  results.push({code,name:resolved.name,baseName,section:resolved.section,price,priceVerified:true,unit:normalizeUnit(cell.unit),packageQty:cleaned.packageQty,lengthPerPiece:cleaned.lengthPerPiece,group:detectCatalogGroup(baseName)||detectCatalogGroup(heading),page:sheetName,raw:vals.join(' | '),origin:'Excel',issues});
+ }
+ return {results,skipped,headerFound:!!columns};
+}
+async function catalogReadSpreadsheet(file){
+ if(!window.XLSX)throw new Error('Excel okuyucu yüklenemedi. İnternet bağlantısını kontrol edin.');
+ const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});let result={rows:[],warnings:[],samples:[],totalPages:wb.SheetNames.length,scanned:0};
+ for(const sh of wb.SheetNames){const out=catalogRowsFromSheet(wb.Sheets[sh],sh);result.rows.push(...out.results);if(!out.headerFound)result.warnings.push(`${sh}: ürün adı / stok kodu başlığı bulunamadı.`);if(out.skipped)result.warnings.push(`${sh}: ${out.skipped} boş veya tanımlanamayan satır atlandı.`);}
+ return result;
+}
+function catalogMaterialGroup(g){
+ const name=typeof g==='string'?g:(g?.name||'');return catalogMaterial(name);
+}
+
+function catalogRowSafety(r,list){
+ const problems=[...(r.issues||[])];
+ if(r.importConflict)problems.push('Aynı stok kodu başka tanımla bulundu');
+ if(!catalogSpecificType(r.name)&&!catalogPipeLengthDimension(r.name))problems.push('Ürün tipi belirtilmemiş; otomatik aktarım durduruldu');
+ if(/^sheet\s*\d+$/i.test(r.section||'')&&bareCatalogDimension(r.baseName||r.name))problems.push('Ürün başlığı eksik');
+ const pdfMat=catalogMaterial(r.section||''),rowMat=catalogMaterial(r.name||'');
+ if(pdfMat&&rowMat&&pdfMat!==rowMat)problems.push('PDF başlığı ve ürün açıklaması PP/PVC açısından uyuşmuyor');
+ if(r.origin==='PDF'&&r.price!==null&&!r.priceVerified)problems.push('PDF fiyatı kaynaktan doğrulanmalı');
+ if(r.origin==='PDF'&&r.price!==null&&!r.code)problems.push('Stok kodu olmayan PDF fiyatı kontrol gerektiriyor');
+ const prior=db.products.find(p=>p.list===list&&(r.code?p.code===r.code:norm(p.name)===norm(r.name)));
+ if(prior){
+  const pastMat=catalogMaterial([prior.name,prior.section||''].join(' '));
+  const newMat=catalogMaterial([r.name,r.section||''].join(' '));
+  if(pastMat&&newMat&&pastMat!==newMat)problems.push('Mevcut ürünle PP/PVC malzemesi çakışıyor');
+ }
+ return [...new Set(problems)];
+}
+function catalogGroupId(row){
+ // Import group and discount group are a single shared value.
+ return groupIdForCategory($('importGroup').value);
+}
+function catalogPreviewStatus(message,type='note'){$('catalogStatus').textContent=message;$('catalogStatus').dataset.state=type;}
+
+// Parser-level warnings may be accepted only after source-based manual review.
+// PP/PVC clashes, conflicting stock codes and names without a real product type
+// are NEVER bypassed by an approval checkbox.
+function catalogBlockingReview(row,list){
+ const problems=[];
+ if(!catalogText(row.name))problems.push('Ürün adı boş');
+ if(!catalogSpecificType(row.name)&&!catalogPipeLengthDimension(row.name))problems.push('Gerçek ürün türü belirtilmemiş');
+ if(row.priceInputError)problems.push('Fiyat alanı geçersiz');
+ if(row.price!==null&&(!Number.isFinite(row.price)||row.price<0))problems.push('Geçersiz fiyat');
+ if(row.origin==='PDF'&&row.price!==null&&!catalogText(row.code))problems.push('Fiyatlı PDF ürünü için stok kodu gerekli');
+ if(row.importConflict)problems.push('Aynı stok kodu birden fazla farklı üründe kullanılıyor');
+ const initial=(row.initialIssues||[]).join(' | ');
+ if(/sonundaki sayı|koli adedi \/ boy uzunluğu/i.test(initial)&&!(row.nameEdited&&(row.packageEdited||catalogText(row.packageQty))))problems.push('Şüpheli koli sayısı: ürün adını ve koli alanını düzeltin');
+ if(/fiyat sütunu net okunamadı|fiyat ayrı sütunda doğrulanamadı|fiyat sütunu belirsiz/i.test(initial)&&!row.priceEdited)problems.push('Belirsiz fiyatı kaynak satırla karşılaştırıp fiyat alanını düzenleyin');
+ if(/tablo sütun başlıkları bulunamadı/i.test(initial)&&!row.nameEdited)problems.push('Başlığı okunamayan satırın ürün adını kaynaktan doğrulayın');
+ const productMat=catalogMaterial(row.name),sectionMat=catalogMaterial(row.section||'');
+ if(productMat&&sectionMat&&productMat!==sectionMat)problems.push('PDF başlığı ile ürünün PP/PVC malzemesi çakışıyor');
+ const prior=db.products.find(p=>p.list===list&&(row.code?p.code===row.code:norm(p.name)===norm(row.name)));
+ if(prior){const past=catalogMaterial([prior.name,prior.section||''].join(' '));const next=catalogMaterial([row.name,row.section||''].join(' '));if(past&&next&&past!==next)problems.push('Mevcut kayıtla PP/PVC uyuşmazlığı');}
+ return [...new Set(problems)];
+}
+function refreshCatalogConflicts(){
+ if(!pendingCatalog)return;
+ const codes=new Map();
+ for(const r of pendingCatalog.rows){r.importConflict=false;if(r.excluded||r.imported||!r.code)continue;const code=norm(r.code);if(!codes.has(code))codes.set(code,[]);codes.get(code).push(r);}
+ for(const items of codes.values())if(items.length>1)for(const r of items)r.importConflict=true;
+}
+function catalogNeedsReview(row,list){return !!row.initialRisk||catalogRowSafety(row,list).length>0||catalogBlockingReview(row,list).length>0;}
+function catalogReady(row,list){
+ if(row.excluded||row.imported||!row.name)return false;
+ const risks=catalogRowSafety(row,list);
+ if(!catalogNeedsReview(row,list))return !risks.length&&!catalogBlockingReview(row,list).length;
+ return !!row.reviewApproved && !catalogBlockingReview(row,list).length && (row.price===null||row.priceVerified);
+}
+function catalogPageControls(kind,total){
+ const pages=Math.max(1,Math.ceil(total/CATALOG_PREVIEW_LIMIT));
+ catalogPages[kind]=Math.min(Math.max(0,catalogPages[kind]),pages-1);
+ const n=catalogPages[kind];return `<button type="button" aria-label="Önceki sayfa" onclick="catalogChangePage('${kind}',-1)" ${n===0?'disabled':''}>‹</button><span>${n+1} / ${pages}</span><button type="button" aria-label="Sonraki sayfa" onclick="catalogChangePage('${kind}',1)" ${n>=pages-1?'disabled':''}>›</button>`;
+}
+function catalogChangePage(kind,delta){catalogPages[kind]+=delta;renderCatalogPreview();}
+function catalogField(index,key,val,label,wide=false,disabled=false){return `<input aria-label="${esc(label)}" value="${esc(val??'')}" onchange="editCatalogPreview(${index},'${key}',this.value,this)" style="min-width:${wide?'200':'100'}px" ${disabled?'disabled':''}>`;}
+function catalogRowResult(row,index,isRisk){
+ const risk=catalogRowSafety(row,pendingCatalog.list),blocked=catalogBlockingReview(row,pendingCatalog.list);
+ const disabled=!!row.imported;
+ const title=disabled?'<span class="pill">Kaydedildi</span>':row.excluded?'<span class="pill warn">Hariç</span>':row.reviewApproved?'<span class="pill">Onaylandı</span>':isRisk?'<span class="pill bad">Kontrol gerekli</span>':row.price===null?'<span class="pill warn">Fiyatsız</span>':'<span class="pill">Hazır</span>';
+ const issueHtml=[...new Set([...risk,...(row.priceInputError?['Fiyat geçersiz']:[])])].map(t=>`<span>• ${esc(t)}</span>`).join('');
+ const blockedHtml=blocked.map(t=>`<span class="catalog-review-blocker">• ${esc(t)}</span>`).join('');
+ return {title,reasonHtml:issueHtml+(blocked.length?`<div><strong>Düzeltme gerekli:</strong> ${blockedHtml}</div>`:''),blocked};
+}
+function catalogRowHtml(row,index,isRisk){
+ const {title,reasonHtml}=catalogRowResult(row,index,isRisk);
+ const disabled=!!row.imported;
+ const basic=`<td>${esc(row.page)}</td><td>${catalogField(index,'code',row.code,`Stok kodu ${index+1}`,false,disabled)}</td><td>${catalogField(index,'section',row.section||pendingCatalog.list,`Üst başlık ${index+1}`,true,disabled)}</td><td>${catalogField(index,'name',row.name,`Ürün adı ${index+1}`,true,disabled)}</td>`;
+ const price=`${catalogField(index,'price',row.price===null?'':row.price,`Fiyat ${index+1}`,false,disabled)}`;
+ const packageCell=catalogField(index,'packageQty',row.packageQty||'',`Koli adedi ${index+1}`,false,disabled);
+ if(!isRisk)return `<tr class="${disabled?'catalog-imported':''}">${basic}<td>${price}</td><td>${packageCell}</td><td>${title}</td></tr>`;
+ const selectedCategory=$('importGroup').value;const options=`<option value="${esc(groupIdForCategory(selectedCategory))}">${esc(selectedCategory)}</option>`;
+ const group=`<span class="pill" title="Katalog yüklerken seçilen ortak ürün grubu">${esc(selectedCategory)}</span>`;
+ const reviewed=!!row.reviewApproved;
+ const review=`<label class="catalog-review-check"><input type="checkbox" aria-label="Kontrol ettim ${index+1}" onchange="approveCatalogRiskRow(${index},this.checked)" ${reviewed?'checked':''} ${disabled||row.excluded?'disabled':''}> Kontrol ettim, aktarıma dahil et</label><button class="catalog-exclude" type="button" onclick="excludeCatalogRiskRow(${index})" ${disabled?'disabled':''}>${row.excluded?'Tekrar dahil et':'Hariç tut'}</button><div class="catalog-review-feedback" data-state="${row.reviewMessageState||''}" aria-live="polite">${esc(row.reviewMessage||'')}</div>`;
+ return `<tr data-catalog-row="${index}" class="${disabled?'catalog-imported':''}">${basic}<td>${group}</td><td>${price}</td><td>${packageCell}</td><td><span class="catalog-current-status">${title}</span><div class="catalog-risk-reason catalog-risk-reasons">${reasonHtml}</div><details><summary>PDF / Excel kaynak satır</summary><div class="catalog-risk-source">${esc(row.raw||'Kaynak metin yok')}</div></details></td><td>${review}</td></tr>`;
+}
+// Önizlemedeki satırı yerinde güncelle. Tüm tabloyu yeniden çizmek, input'tan
+// onay kutusuna tıklarken change olayında hedef checkbox'ı DOM'dan kaldırıyordu.
+// Bu nedenle bazı sayfalarda onay tıklaması hiç gerçekleşmiyordu.
+function catalogRefreshCounts(){
+ if(!pendingCatalog)return;
+ refreshCatalogConflicts();
+ const list=pendingCatalog.list;
+ const records=pendingCatalog.rows.map((r,idx)=>({r,idx})).filter(item=>item.r.name);
+ const safe=records.filter(({r})=>!catalogNeedsReview(r,list));
+ const risk=records.filter(({r})=>catalogNeedsReview(r,list));
+ const approved=risk.filter(({r})=>catalogReady(r,list));
+ const imported=records.filter(({r})=>r.imported).length;
+ const includeWithoutPrice=$('allowMissingPrice').checked;
+ const ready=records.filter(({r})=>catalogReady(r,list)&&(includeWithoutPrice||r.price!==null));
+ $('catalogPreviewHeadline').textContent=`${records.length} ürün · ${safe.length} güvenilir · ${risk.length} riskli · ${approved.length} riskli satır onaylandı · ${imported} kaydedildi`;
+ $('catalogSafeCount').textContent=`${safe.length} satır`;
+ $('catalogRiskCount').textContent=`${risk.length} satır`;
+ $('catalogImportConfirm').disabled=!ready.length;
+ $('catalogImportConfirm').textContent=ready.length?`Hazır ve onaylı ${ready.length} ürünü kataloğa aktar`:'Aktarılacak onaylı ürün yok';
+}
+function catalogRefreshOneRow(index){
+ const row=pendingCatalog?.rows?.[index];
+ const tr=$('catalogRiskRows').querySelector(`tr[data-catalog-row="${index}"]`);
+ if(!row||!tr)return;
+ const {title,reasonHtml}=catalogRowResult(row,index,true);
+ const titleEl=tr.querySelector('.catalog-current-status');if(titleEl)titleEl.innerHTML=title;
+ const reasonsEl=tr.querySelector('.catalog-risk-reasons');if(reasonsEl)reasonsEl.innerHTML=reasonHtml;
+ const checkbox=tr.querySelector('input[type="checkbox"]');if(checkbox){checkbox.checked=!!row.reviewApproved;checkbox.disabled=!!row.imported||!!row.excluded;}
+ const exclude=tr.querySelector('.catalog-exclude');if(exclude)exclude.textContent=row.excluded?'Tekrar dahil et':'Hariç tut';
+ const feedback=tr.querySelector('.catalog-review-feedback');if(feedback){feedback.textContent=row.reviewMessage||'';feedback.dataset.state=row.reviewMessageState||'';}
+}
+function renderCatalogPreview(){
+ const wrap=$('catalogPreview');if(!pendingCatalog){wrap.classList.add('hidden');return;}
+ wrap.classList.remove('hidden');refreshCatalogConflicts();
+ const list=pendingCatalog.list;
+ const records=pendingCatalog.rows.map((r,idx)=>({r,idx})).filter(item=>item.r.name);
+ const safe=records.filter(({r})=>!catalogNeedsReview(r,list));
+ const risk=records.filter(({r})=>catalogNeedsReview(r,list));
+ const includeWithoutPrice=$('allowMissingPrice').checked;
+ const ready=records.filter(({r})=>catalogReady(r,list)&&(includeWithoutPrice||r.price!==null));
+ const approved=risk.filter(({r})=>catalogReady(r,list));
+ const imported=records.filter(({r})=>r.imported).length;
+ $('catalogPreviewHeadline').textContent=`${records.length} ürün · ${safe.length} güvenilir · ${risk.length} riskli · ${approved.length} riskli satır onaylandı · ${imported} kaydedildi`;
+ $('catalogPreviewHelp').textContent='Riskli satırları alttaki tabloda düzeltip onaylayabilirsiniz. Onay verilemiyorsa nedenini aynı satırda kırmızı açıklama gösterir. Kontrol edilmemiş ürünler kaydedilmez.';
+ $('catalogSafeCount').textContent=`${safe.length} satır`;
+ $('catalogRiskCount').textContent=`${risk.length} satır`;
+ $('catalogSafePager').innerHTML=catalogPageControls('safe',safe.length);
+ $('catalogRiskPager').innerHTML=catalogPageControls('risky',risk.length);
+ $('catalogPreviewRows').innerHTML=safe.slice(catalogPages.safe*CATALOG_PREVIEW_LIMIT,(catalogPages.safe+1)*CATALOG_PREVIEW_LIMIT).map(({r,idx})=>catalogRowHtml(r,idx,false)).join('')||'<tr><td class="empty" colspan="7">Doğrudan aktarılabilir ürün bulunamadı.</td></tr>';
+ $('catalogRiskRows').innerHTML=risk.slice(catalogPages.risky*CATALOG_PREVIEW_LIMIT,(catalogPages.risky+1)*CATALOG_PREVIEW_LIMIT).map(({r,idx})=>catalogRowHtml(r,idx,true)).join('')||'<tr><td class="empty" colspan="9">Riskli satır bulunmuyor.</td></tr>';
+ $('catalogWarnings').textContent=pendingCatalog.warnings.map(x=>'• '+x).join('\n')||'Uyarı yok.';
+ $('catalogRawSample').textContent=pendingCatalog.samples.slice(0,10).join('\n');
+ $('catalogEmptyHint').textContent=records.length?'': 'Tablo okunamadı. Başlığı “Ürün Adı, Stok Kodu, Fiyat, Koli Adedi” olan bir Excel dosyası deneyin.';
+ $('catalogImportConfirm').disabled=!ready.length;
+ $('catalogImportConfirm').textContent=ready.length?`Hazır ve onaylı ${ready.length} ürünü kataloğa aktar`:'Aktarılacak onaylı ürün yok';
+}
+function editCatalogPreview(index,key,value,inputEl){
+ const row=pendingCatalog?.rows?.[index];if(!row||row.imported)return;
+ row.reviewApproved=false;row.reviewMessage='';row.reviewMessageState='';
+ if(key==='price'){row.priceEdited=true;
+  const t=catalogText(value),price=numberOrNull(t);
+  row.priceInputError=!!t&&(price===null||!Number.isFinite(price)||price<0);
+  row.price=row.priceInputError?null:price;
+  row.priceVerified=false;
+  row.issues=(row.issues||[]).filter(i=>!/(fiyat sütunu|fiyat ayrı|fiyat belirsiz)/i.test(i));
+ }
+ else if(key==='name'){row.nameEdited=true;
+  const cleaned=splitDimensionsAndPackaging(value,row.section);
+  row.baseName=cleaned.name;
+  const resolved=catalogResolveRowProduct(cleaned.name,row.section);
+  row.name=resolved.name;
+  row.issues=(row.issues||[]).filter(i=>!/(Ürün tipi|Ana sistem|Ürün adının sonundaki sayı|Tablo sütun)/i.test(i));
+  row.issues.push(...resolved.issues);
+  if(cleaned.packageQty&&!row.packageQty)row.packageQty=cleaned.packageQty;
+  if(cleaned.reason)row.issues.push(cleaned.reason);
+ }
+ else if(key==='section'){
+  row.section=catalogText(value);
+  const resolved=catalogResolveRowProduct(row.baseName||row.name,row.section);
+  row.name=resolved.name;
+  row.issues=(row.issues||[]).filter(i=>!/(Ürün tipi|Ana sistem)/i.test(i));
+  row.issues.push(...resolved.issues);
+ }
+ else {row[key]=catalogText(value);if(key==='packageQty')row.packageEdited=true;}
+ // Input değişince tüm tabloyu yeniden oluşturmak checkbox tıklamasını iptal eder.
+ // Bu nedenle yalnızca ilgili satırın uyarıları ve sayı göstergeleri güncellenir.
+ if(inputEl&&key==='name'&&document.activeElement===inputEl)inputEl.value=row.name;
+ catalogRefreshOneRow(index);catalogRefreshCounts();
+}
+function approveCatalogRiskRow(index,approved){
+ const row=pendingCatalog?.rows?.[index];if(!row||row.imported||row.excluded)return;
+ if(!approved){row.reviewApproved=false;row.priceVerified=false;row.reviewMessage='Onay geri alındı.';row.reviewMessageState='';catalogRefreshOneRow(index);catalogRefreshCounts();return;}
+ refreshCatalogConflicts();
+ const blocked=catalogBlockingReview(row,pendingCatalog.list);
+ if(blocked.length){
+  row.reviewApproved=false;row.reviewMessage=`Onaylanamadı: ${blocked.join('; ')}.`;row.reviewMessageState='error';
+  catalogRefreshOneRow(index);catalogRefreshCounts();
+  catalogPreviewStatus(`Satır ${index+1} kontrol istiyor. Açıklama ilgili satırın yanında gösterildi.`,'warn');return;
+ }
+ // Kaynaktan doğrulama onayı; diğer ürünleri ve tablonun kaydırma konumunu değiştirme.
+ row.reviewApproved=true;row.priceVerified=true;
+ row.reviewMessage='Onaylandı. Üstteki “Hazır ve onaylı ürünleri kataloğa aktar” butonuyla kaydedebilirsiniz.';
+ row.reviewMessageState='ok';
+ catalogRefreshOneRow(index);catalogRefreshCounts();
+ catalogPreviewStatus(`Satır ${index+1} onaylandı. Ürün henüz kaydedilmedi; aktarım düğmesini kullanın.`,'ok');
+}
+function excludeCatalogRiskRow(index){
+ const row=pendingCatalog?.rows?.[index];if(!row||row.imported)return;
+ row.excluded=!row.excluded;row.reviewApproved=false;
+ row.reviewMessage=row.excluded?'Satır aktarım dışında tutuldu.':'Satır yeniden dahil edildi, kayıttan önce onaylayın.';row.reviewMessageState='';
+ catalogRefreshOneRow(index);catalogRefreshCounts();
+}
+function downloadCatalogPreview(){
+ if(!pendingCatalog?.rows?.length)return;
+ if(!window.XLSX)return alert('Excel kütüphanesi yüklenemedi.');
+ const wb=XLSX.utils.book_new(),rows=pendingCatalog.rows.map(r=>({'Stok Kodu':r.code,'Üst Başlık':r.section||pendingCatalog.list,'Ürün Adı':r.name,'Liste Fiyatı':r.price??'','Koli / Ambalaj':r.packageQty||'','1 Boy Uzunluğu':r.lengthPerPiece||'','Birim':r.unit,'Grup':r.group,'PDF Sayfa / Sekme':r.page,'Kontrol Uyarısı':catalogRowSafety(r,pendingCatalog.list,$('importGroup').value).join('; '),'Kaynak Metin':r.raw}));
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Tespit Edilen Ürünler');XLSX.writeFile(wb,'Katalog_Kontrol.xlsx');
+}
+async function importCatalog(){
+ const file=$('catalogFile').files[0],list=$('importList').value.trim();
+ if(!file||!list)return alert('Fiyat listesi/katalog adı yazın ve bir PDF, Excel veya CSV dosyası seçin.');
+ $('catalogPreview').classList.add('hidden');pendingCatalog=null;$('allowExistingUpdates').checked=false;
+ const button=$('catalogParseBtn');button.disabled=true;
+ catalogPreviewStatus('Dosya açılıyor…');
+ try{
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='pdf')pendingCatalog=await catalogReadPDF(file);
+  else if(['xls','xlsx','csv'].includes(ext))pendingCatalog=await catalogReadSpreadsheet(file);
+  else throw new Error('PDF, XLSX, XLS veya CSV dosyası seçin.');
+  pendingCatalog.list=list;
+  // Ignore repeated page headings in the same file, dedupe by SKU/name within the import.
+  const seen=new Map();pendingCatalog.rows=pendingCatalog.rows.filter(r=>{
+   const key=r.code?'c:'+norm(r.code):'n:'+norm(r.name)+'|'+norm(r.section);
+   const earlier=seen.get(key);
+   if(earlier){
+    if(norm(earlier.name)===norm(r.name) && norm(earlier.section)===norm(r.section))return false;
+    earlier.importConflict=true;r.importConflict=true;
+    pendingCatalog.warnings.push('ÇAKIŞMA: aynı stok kodunda farklı ad/başlık: '+r.code);
+   }else seen.set(key,r);
+   return true;
+  });
+  pendingCatalog.rows.forEach(r=>{r.initialRisk=!!catalogRowSafety(r,list).length;r.initialIssues=[...(r.issues||[])];r.reviewApproved=false;r.excluded=false;r.imported=false;});
+  catalogPages.safe=0;catalogPages.risky=0;
+  renderCatalogPreview();
+  catalogPreviewStatus(pendingCatalog.rows.length?`Dosya okundu. ${pendingCatalog.rows.length} ürün önizlemede hazır; henüz kataloğa kaydedilmedi.`:'Dosya okundu ancak ürün satırı tanınamadı. Ham satır örneklerini ve uyarıları inceleyin.',pendingCatalog.rows.length?'ok':'warn');
+ }catch(err){pendingCatalog=null;catalogPreviewStatus(`Dosya işlenemedi: ${err.message}`,'error');console.error('Catalog import:',err);}
+ finally{button.disabled=false;}
+}
+
+async function confirmCatalogImport(){
+ if(!pendingCatalog?.rows.length)return;
+ const list=$('importList').value.trim();
+ if(!list||list!==pendingCatalog.list)return alert('Liste adı değişmiş. Dosyayı tekrar okuyun.');
+ const category=$('importGroup').value;
+ if(!CATALOG_CATEGORIES.includes(category))return alert('Geçerli üst kategori seçin.');
+ refreshCatalogConflicts();
+ const allowMissing=$('allowMissingPrice').checked,allowUpdate=$('allowExistingUpdates').checked;
+ const good=pendingCatalog.rows.filter(r=>catalogReady(r,list)&&(allowMissing||r.price!==null));
+ const unfinished=pendingCatalog.rows.filter(r=>!r.imported&&!r.excluded&&!catalogReady(r,list)).length;
+ if(!good.length)return alert('Aktarılacak hazır ürün yok. Riskli satırları düzenleyip kaynak belgeyle kontrol ederek onaylayın.');
+ let newCount=0,changed=0,skipped=0;
+ const temp=db.products.map(p=>({...p}));
+ const actuallySaved=[];
+ for(const r of good){
+  const code=catalogText(r.code),section=catalogText(r.section)||list;
+  const name=catalogText(r.name);
+  const prior=temp.find(p=>p.list===list&&(code?p.code===code:norm(p.name)===norm(name)));
+  if(prior&&!allowUpdate){skipped++;continue;}
+  const data={id:prior?.id||uid(),name,code,section,price:r.price===null?(prior?.price??null):r.price,list,category,groupId:groupIdForCategory(category),unit:r.unit||'adet',packageQty:r.packageQty||'',lengthPerPiece:r.lengthPerPiece||''};
+  if(prior){Object.assign(prior,data);changed++;}else{temp.push(data);newCount++;}
+  actuallySaved.push(r);
+ }
+ if(!newCount&&!changed)return catalogPreviewStatus('Yeni ürün yok; mevcut kayıtlar korunuyor. Mevcut ürünleri değiştirmek isterseniz “Mevcut ürün ve fiyatlarını güncelle” seçeneğini açın.','warn');
+ if(changed&&!confirm(`${changed} mevcut ürün güncellenecek. Ürün/fiyatları orijinal listeden doğruladınız mı?`))return;
+ const previous=db.products;db.products=temp;
+ if(!await persist()){
+  db.products=previous;renderAll();return catalogPreviewStatus('Kaydedilemedi; hiçbir ürün değiştirilmedi. Yerel sunucu ile açın.','error');
+ }
+ for(const row of actuallySaved)row.imported=true;
+ renderCatalogPreview();
+ catalogPreviewStatus(`${newCount} yeni ürün ve ${changed} güncelleme kaydedildi. ${unfinished} incelenmemiş satır önizlemede kaldı; düzelterek sonradan aktarabilirsiniz. ${skipped} mevcut ürün korunmuştur.`,'ok');
+}
+
+// Güvenlik: uygulama açılışında eski ürün isimleri/fiyatları otomatik değiştirilmez.
+</script>
+</body></html>
