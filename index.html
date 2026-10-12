@@ -1676,7 +1676,7 @@ function catalogRowHtml(row,index,isRisk){
  const basic=`<td>${esc(row.page)}</td><td>${catalogField(index,'code',row.code,`Stok kodu ${index+1}`,false,disabled)}</td><td>${catalogField(index,'section',row.section||pendingCatalog.list,`Üst başlık ${index+1}`,true,disabled)}</td><td>${catalogField(index,'name',row.name,`Ürün adı ${index+1}`,true,disabled)}${isRisk?catalogTypeControls(row,index,disabled):''}</td>`;
  const price=`${catalogField(index,'price',row.price===null?'':row.price,`Fiyat ${index+1}`,false,disabled)}`;
  const packageCell=catalogField(index,'packageQty',row.packageQty||'',`Koli adedi ${index+1}`,false,disabled);
- if(!isRisk)return `<tr data-catalog-row="${index}" class="${disabled?'catalog-imported':''}">${basic}<td class="catalog-size-cell">${esc(row.size||catalogReadableSize(row.name)||'—')}</td><td>${price}</td><td>${packageCell}</td><td>${title}</td><td><button class="btn ${row.excluded?'secondary':'red'} small" type="button" onclick="catalogExcludeOrDelete(${index})">${row.imported?'Kayıttan sil':row.excluded?'Tekrar dahil et':'Hariç tut'}</button></td></tr>`;
+ if(!isRisk)return `<tr data-catalog-row="${index}" class="${disabled?'catalog-imported':''}">${basic}<td class="catalog-size-cell">${esc(row.size||catalogReadableSize(row.name)||'—')}</td><td>${price}</td><td>${packageCell}</td><td>${title}</td><td><button class="btn ${row.excluded?'secondary':'red'} small" type="button" onclick="catalogExcludeOrDelete(${index})">${row.imported?'Kayıttan sil':row.excluded?'Geri al':'Aktarımdan çıkar'}</button></td></tr>`;
  const selectedCategory=$('importGroup').value;const options=`<option value="${esc(groupIdForCategory(selectedCategory))}">${esc(selectedCategory)}</option>`;
  const group=`<span class="pill" title="Katalog yüklerken seçilen ortak ürün grubu">${esc(selectedCategory)}</span>`;
  const reviewed=!!row.reviewApproved;
@@ -1695,9 +1695,10 @@ function catalogRefreshCounts(){
  const risk=records.filter(({r})=>catalogNeedsReview(r,list));
  const approved=risk.filter(({r})=>catalogReady(r,list));
  const imported=records.filter(({r})=>r.imported).length;
+ const excluded=records.filter(({r})=>r.excluded).length;
  const includeWithoutPrice=$('allowMissingPrice').checked;
  const ready=records.filter(({r})=>catalogReady(r,list)&&(includeWithoutPrice||r.price!==null));
- $('catalogPreviewHeadline').textContent=`${records.length} ürün · ${safe.length} güvenilir · ${risk.length} riskli · ${approved.length} riskli satır onaylandı · ${imported} kaydedildi`;
+ $('catalogPreviewHeadline').textContent=`${records.length} ürün · ${safe.length} doğrudan · ${risk.length} riskli · ${excluded} hariç · ${approved.length} riskli onaylı · ${imported} kaydedildi`;
  $('catalogSafeCount').textContent=`${safe.length} satır`;
  $('catalogRiskCount').textContent=`${risk.length} satır`;
  $('catalogImportConfirm').disabled=!ready.length;
@@ -1727,7 +1728,8 @@ function renderCatalogPreview(){
  const ready=records.filter(({r})=>catalogReady(r,list)&&(includeWithoutPrice||r.price!==null));
  const approved=risk.filter(({r})=>catalogReady(r,list));
  const imported=records.filter(({r})=>r.imported).length;
- $('catalogPreviewHeadline').textContent=`${records.length} ürün · ${safe.length} güvenilir · ${risk.length} riskli · ${approved.length} riskli satır onaylandı · ${imported} kaydedildi`;
+ const excluded=records.filter(({r})=>r.excluded).length;
+ $('catalogPreviewHeadline').textContent=`${records.length} ürün · ${safe.length} doğrudan · ${risk.length} riskli · ${excluded} hariç · ${approved.length} riskli onaylı · ${imported} kaydedildi`;
  $('catalogPreviewHelp').textContent='Kaynak sırası korunur. Hatalı gördüğünüz doğrudan aktarılabilir satırı da Hariç tut ile çıkarabilir; daha önce kaydettiğiniz ürünü Kayıttan sil ile ortak katalogdan silebilirsiniz. Riskli satırlarda ürün türü, kod ve fiyatı doğrulayın.';
  $('catalogSafeCount').textContent=`${safe.length} satır`;
  $('catalogRiskCount').textContent=`${risk.length} satır`;
