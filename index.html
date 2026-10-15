@@ -117,7 +117,7 @@
 .dictionary-interpreted{margin-top:7px;padding:7px 8px;background:#fff3e3;border-left:3px solid #f28c28;border-radius:5px;font-size:11px;line-height:1.5;color:#784b15;overflow-wrap:anywhere}
 
 .catalog-import-table .catalog-size-cell{font-weight:800;color:#183653;white-space:nowrap;min-width:72px}
-.safety-card{background:#fff9f0;border:1px solid #efd4b4;border-radius:12px;padding:15px;margin-bottom:16px}.safety-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:8px;margin:12px 0}.safety-metric{background:#fff;border:1px solid #f1ddc4;border-radius:8px;padding:8px;display:flex;flex-direction:column}.safety-metric b{font-size:19px;color:#163a55}.safety-metric small{font-size:11px;color:#86684b}.safety-card details{margin:10px 0}.safety-card summary{cursor:pointer}.safety-warning{background:#fff0dc;color:#925415;padding:9px;border-radius:6px}.safety-history{border:1px solid #d2e0e8;border-radius:12px;padding:15px;margin:16px 0;background:#fff}.safety-history summary{cursor:pointer}.safety-version{margin:9px 0;border-bottom:1px solid #e4ebef;padding:7px 0}.safety-version summary{cursor:pointer}.catalog-bulk-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:13px 15px;margin:10px 0 14px;background:#fff5e9;border:1px solid #efd2b0;border-radius:10px}.catalog-bulk-toolbar strong{font-size:12px;color:#163953}.catalog-bulk-toolbar p{font-size:11px;color:#705e48;margin:6px 0 0;max-width:630px}.catalog-bulk-toolbar .btn{white-space:normal;max-width:340px}</style>
+.safety-card{background:#fff9f0;border:1px solid #efd4b4;border-radius:12px;padding:15px;margin-bottom:16px}.safety-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:8px;margin:12px 0}.safety-metric{background:#fff;border:1px solid #f1ddc4;border-radius:8px;padding:8px;display:flex;flex-direction:column}.safety-metric b{font-size:19px;color:#163a55}.safety-metric small{font-size:11px;color:#86684b}.safety-card details{margin:10px 0}.safety-card summary{cursor:pointer}.safety-warning{background:#fff0dc;color:#925415;padding:9px;border-radius:6px}.safety-history{border:1px solid #d2e0e8;border-radius:12px;padding:15px;margin:16px 0;background:#fff}.safety-history summary{cursor:pointer}.safety-version{margin:9px 0;border-bottom:1px solid #e4ebef;padding:7px 0}.safety-version summary{cursor:pointer}.catalog-bulk-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:13px 15px;margin:10px 0 14px;background:#fff5e9;border:1px solid #efd2b0;border-radius:10px}.catalog-bulk-toolbar strong{font-size:12px;color:#163953}.catalog-bulk-toolbar p{font-size:11px;color:#705e48;margin:6px 0 0;max-width:630px}.catalog-bulk-toolbar .btn{white-space:normal;max-width:340px}.catalog-captured-note{margin-top:6px;max-width:320px;font-size:11px}.catalog-captured-note summary{cursor:pointer;color:#835919;padding:4px 0}.catalog-captured-note p{font-size:11px;line-height:1.4;color:#805a2b;margin:4px 0}</style>
 </head>
 <body>
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
@@ -564,7 +564,12 @@ function saveProduct(){
  const name=completeCatalogName(rawName,section,price);
  const original=db.products.find(p=>p.id===$('editProduct').value);
  const obj={...(original||{}),id:$('editProduct').value||uid(),code,name,section,groupId:$('pGroup').value,category:db.groups.find(g=>g.id===$('pGroup').value)?.name||'Diğer',list,price,unit:$('pUnit').value};
- if(original) safetyChange('Ürün düzenlendi',(code||name)+' · fiyat: '+(original.price??'—')+' → '+(price??'—'));
+ if(original){
+  if(code&&(catalogSpecificType(name)||catalogPipeLengthDimension(name))&&price!==null){
+   obj.sourceApprovalMode='manual-verified';obj.sourceWarnings=[];
+  }
+  safetyChange('Ürün düzenlendi',(code||name)+' · fiyat: '+(original.price??'—')+' → '+(price??'—'));
+ }
  else safetyChange('Ürün eklendi',code+' · '+name);
  const index=db.products.findIndex(p=>p.id===obj.id);
  if(index>=0)db.products[index]=obj;else db.products.push(obj);
@@ -597,7 +602,7 @@ function renderProducts(){
   out[out.length-1].products.push(p);
  }
  $('productFolders').innerHTML=out.map(folder=>{
-  const rows=folder.products.map(p=>`<tr><td>${esc(p.code)}</td><td><b>${esc(p.name)}</b></td><td>${esc(p.category||'Eski kayıt')}</td><td>${p.price===null||p.price===undefined?'<span class="pill warn">Fiyat girilmedi</span>':money(p.price)}</td><td>${esc(p.unit)}</td><td><button type="button" class="btn secondary small" onclick="editProduct('${esc(p.id)}')">Düzenle</button> <button type="button" class="btn red small" onclick="delProduct('${esc(p.id)}')">Sil</button></td></tr>`).join('');
+  const rows=folder.products.map(p=>`<tr><td>${esc(p.code)}</td><td><b>${esc(p.name)}</b>${p.sourceApprovalMode==='existing-data'&&p.sourceWarnings?.length?`<div class="catalog-captured-note"><span class="pill warn" title="Mevcut bilgilerle onaylandı">Kaynak uyarısıyla kaydedildi</span><details><summary>${p.sourceWarnings.length} kaynağa ait uyarı</summary><p>${p.sourceWarnings.map(w=>esc(w)).join(' · ')}</p></details></div>`:''}</td><td>${esc(p.category||'Eski kayıt')}</td><td>${p.price===null||p.price===undefined?'<span class="pill warn">Fiyat girilmedi</span>':money(p.price)}</td><td>${esc(p.unit)}</td><td><button type="button" class="btn secondary small" onclick="editProduct('${esc(p.id)}')">Düzenle</button> <button type="button" class="btn red small" onclick="delProduct('${esc(p.id)}')">Sil</button></td></tr>`).join('');
   const priced=folder.products.filter(p=>p.price!==null&&p.price!==undefined).length;
   return `<details class="catalog-folder" ${search?'open':''}><summary><div class="catalog-folder-main"><span class="catalog-folder-arrow" aria-hidden="true">▶</span><div><span class="catalog-folder-title">${esc(folder.section)}</span><span class="catalog-folder-source">${esc(folder.list)}</span></div></div><div class="catalog-folder-stats"><span class="pill">${folder.products.length} ürün</span>${priced<folder.products.length?`<span class="pill warn">${folder.products.length-priced} fiyatsız</span>`:''}</div></summary><div class="catalog-folder-body"><div class="tablewrap"><table><thead><tr><th>Stok kodu</th><th>Ürün adı</th><th>Üst kategori</th><th>Liste fiyatı</th><th>Birim</th><th>İşlem</th></tr></thead><tbody>${rows}</tbody></table></div></div></details>`;
  }).join('')||'<p class="empty">Aramanızla eşleşen ürün bulunamadı. Önce katalog yükleyin veya aramayı temizleyin.</p>';
@@ -922,6 +927,9 @@ function scoreFor(query,p,resolved){
  const v=norm(canonicalOrderMeasure([p.name,p.section||'',p.list||'',p.code||''].join(' ')));
  const qt=q.split(' ').filter(Boolean),vt=v.split(' ').filter(Boolean);
  if(!qt.length||!dictionaryFamilyMatches(chosen,p))return 0;
+ // A partially captured product may be saved to the catalog but must not
+ // silently be matched for a customer quote without a real SKU/type.
+ if(p.sourceApprovalMode==='existing-data'&&(!catalogText(p.code)||(!catalogSpecificType(p.name)&&!catalogPipeLengthDimension(p.name))))return 0;
  const codeOnly=!!(p.code&&q===norm(p.code));
  if(!codeOnly&&!quoteTypeExact(q,p))return 0;
  if(!codeOnly&&!quoteSeriesMatches(q,p))return 0;
