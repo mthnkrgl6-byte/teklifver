@@ -117,7 +117,7 @@
 .dictionary-interpreted{margin-top:7px;padding:7px 8px;background:#fff3e3;border-left:3px solid #f28c28;border-radius:5px;font-size:11px;line-height:1.5;color:#784b15;overflow-wrap:anywhere}
 
 .catalog-import-table .catalog-size-cell{font-weight:800;color:#183653;white-space:nowrap;min-width:72px}
-.safety-card{background:#fff9f0;border:1px solid #efd4b4;border-radius:12px;padding:15px;margin-bottom:16px}.safety-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:8px;margin:12px 0}.safety-metric{background:#fff;border:1px solid #f1ddc4;border-radius:8px;padding:8px;display:flex;flex-direction:column}.safety-metric b{font-size:19px;color:#163a55}.safety-metric small{font-size:11px;color:#86684b}.safety-card details{margin:10px 0}.safety-card summary{cursor:pointer}.safety-warning{background:#fff0dc;color:#925415;padding:9px;border-radius:6px}.safety-history{border:1px solid #d2e0e8;border-radius:12px;padding:15px;margin:16px 0;background:#fff}.safety-history summary{cursor:pointer}.safety-version{margin:9px 0;border-bottom:1px solid #e4ebef;padding:7px 0}.safety-version summary{cursor:pointer}</style>
+.safety-card{background:#fff9f0;border:1px solid #efd4b4;border-radius:12px;padding:15px;margin-bottom:16px}.safety-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:8px;margin:12px 0}.safety-metric{background:#fff;border:1px solid #f1ddc4;border-radius:8px;padding:8px;display:flex;flex-direction:column}.safety-metric b{font-size:19px;color:#163a55}.safety-metric small{font-size:11px;color:#86684b}.safety-card details{margin:10px 0}.safety-card summary{cursor:pointer}.safety-warning{background:#fff0dc;color:#925415;padding:9px;border-radius:6px}.safety-history{border:1px solid #d2e0e8;border-radius:12px;padding:15px;margin:16px 0;background:#fff}.safety-history summary{cursor:pointer}.safety-version{margin:9px 0;border-bottom:1px solid #e4ebef;padding:7px 0}.safety-version summary{cursor:pointer}.catalog-bulk-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:13px 15px;margin:10px 0 14px;background:#fff5e9;border:1px solid #efd2b0;border-radius:10px}.catalog-bulk-toolbar strong{font-size:12px;color:#163953}.catalog-bulk-toolbar p{font-size:11px;color:#705e48;margin:6px 0 0;max-width:630px}.catalog-bulk-toolbar .btn{white-space:normal;max-width:340px}</style>
 </head>
 <body>
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
@@ -194,11 +194,13 @@
       <div class="row space" style="align-items:center;margin-bottom:9px"><div><strong id="catalogPreviewHeadline" style="display:block;color:#153952;font-size:15px"></strong><p class="hint" id="catalogPreviewHelp" style="margin:6px 0 0"></p></div><button class="btn outline small" onclick="downloadCatalogPreview()">İsteğe bağlı: Excel indir</button></div>
       <div class="catalog-review-panel"><div class="catalog-review-heading"><div><h3><span class="catalog-dot safe"></span> Doğrudan aktarılabilir ürünler <span id="catalogSafeCount" class="catalog-count"></span></h3><p>Kaynak PDF / Excel sırası korunur. Ölçü ayrı sütunda gösterilir; düzeltmek için ürün adını düzenleyin. Yanlış olanları Hariç tut ile eleyin; kaydedilen ürünler Kayıttan sil ile kaldırılır.</p></div><div id="catalogSafePager" class="catalog-pager"></div></div>
       <div class="tablewrap"><table class="catalog-import-table"><thead><tr><th>PDF sayfası</th><th>Stok kodu</th><th>Ürün üst başlığı</th><th>Ürün adı</th><th>Ölçü</th><th>Fiyat</th><th>Koli adedi</th><th>Durum</th><th>İşlem</th></tr></thead><tbody id="catalogPreviewRows"></tbody></table></div></div>
-      <div class="catalog-review-panel attention"><div class="catalog-review-heading"><div><h3><span class="catalog-dot risky"></span> Düzenleme gerektiren riskli satırlar <span id="catalogRiskCount" class="catalog-count"></span></h3><p>PDF satırını ve uyarı nedenini kontrol edin. Stok kodu, ürün adı, üst başlık, grup, fiyat ve koli adedini düzeltin. Ardından satırı onaylayın.</p></div><div id="catalogRiskPager" class="catalog-pager"></div></div>
+      <div class="catalog-review-panel attention">
+      <div class="catalog-bulk-toolbar"><div><strong>Satırları tek tek düzeltmek zorunda değilsiniz.</strong><p>Okunan ürün adını, kodunu ve fiyatını olduğu gibi kabul edebilirsiniz. Eksik alanlar uydurulmaz; çelişkili satırlar engellenir.</p></div><button type="button" class="btn secondary" onclick="approveCatalogAsCaptured()">Uygun riskli satırların tümünü mevcut bilgilerle onayla</button></div>
+      <div class="catalog-review-heading"><div><h3><span class="catalog-dot risky"></span> Düzenleme gerektiren riskli satırlar <span id="catalogRiskCount" class="catalog-count"></span></h3><p>Önce kaynaktaki bilgileri kontrol edin. Mevcut bilgilerle onaylayabilir ya da yalnızca gerçekten hatalı alanları düzenleyebilirsiniz.</p></div><div id="catalogRiskPager" class="catalog-pager"></div></div>
       <div class="tablewrap"><table class="catalog-import-table"><thead><tr><th>Kaynak</th><th>Stok kodu</th><th>Üst başlık / klasör</th><th>Ürün adı</th><th>Ölçü</th><th>Grup</th><th>Fiyat</th><th>Koli</th><th>Uyarı / ham satır</th><th>Kontrol</th></tr></thead><tbody id="catalogRiskRows"></tbody></table></div><p class="hint">Onay verdiğiniz ürünler bir sonraki kayıtta eklenir. Fiyatı belirsiz ürünlerde boş bırakılan fiyat 0 TL olarak yorumlanmaz. İsterseniz hatalı satırı <b>Hariç tut</b> olarak işaretleyebilirsiniz.</p></div>
       <p class="hint" id="catalogEmptyHint" style="color:#a46421;margin:13px 0"></p>
       <details style="margin:14px 0"><summary style="cursor:pointer;font-size:12px;font-weight:800">Okuma uyarıları ve ham PDF örnekleri</summary><pre id="catalogWarnings" class="catalog-debug"></pre><pre id="catalogRawSample" class="catalog-debug"></pre></details>
-      <div class="row space" style="flex-wrap:wrap;align-items:center"><div><label class="catalog-checkbox"><input id="allowMissingPrice" type="checkbox" checked onchange="renderCatalogPreview()"> Fiyat sütunu olmayan ürünleri “Fiyat girilmedi” olarak ekle (fiyat 0 TL olmaz)</label><label class="catalog-checkbox" style="margin-top:8px"><input id="allowExistingUpdates" type="checkbox"> Mevcut ürün ve fiyatlarını güncelle (varsayılan: kapalı)</label><p class="hint" style="margin:9px 0 0">Riskli satırları alt tabloda düzenleyip onaylayabilirsiniz. Onaysız satırlar kaydedilmez. Excel kontrolü zorunlu değildir; fiyatları mutlaka kaynağından doğrulayın.</p></div><button id="catalogImportConfirm" class="btn" onclick="confirmCatalogImport()">Hazır ve onaylı ürünleri kataloğa aktar</button></div>
+      <div class="row space" style="flex-wrap:wrap;align-items:center"><div><label class="catalog-checkbox"><input id="allowMissingPrice" type="checkbox" checked onchange="renderCatalogPreview()"> Fiyat sütunu olmayan ürünleri “Fiyat girilmedi” olarak ekle (fiyat 0 TL olmaz)</label><label class="catalog-checkbox" style="margin-top:8px"><input id="allowExistingUpdates" type="checkbox"> Mevcut ürün ve fiyatlarını güncelle (varsayılan: kapalı)</label><p class="hint" style="margin:9px 0 0">Riskli satırları mevcut bilgilerle tek tek veya topluca onaylayabilirsiniz. Fiyat ve stok kodu eksikse boş kalır. Yanlış fiyatları kaydetmemek için kaynak PDF / Excel ile karşılaştırın.</p></div><button id="catalogImportConfirm" class="btn" onclick="confirmCatalogImport()">Hazır ve onaylı ürünleri kataloğa aktar</button></div>
     </div>
   </div>
   <details class="safety-history"><summary><strong>Fiyat listesi sürümleri ve değişiklik geçmişi</strong></summary><p class="hint">İşlem ve fiyat değişiklikleri ortak kayıtta tutulur. Ortak şifreyle hangi kişinin değişiklik yaptığı ayırt edilemez.</p><div id="catalogVersionHistory"></div><h4>Son işlemler</h4><div id="catalogChangeHistory"></div></details><details class="optional-catalog-tools"><summary>İsteğe bağlı: tek ürün ekleme / düzenleme</summary><div class="panel"><div class="panel-header"><div class="panel-title-row"><span class="serial">02</span><div><h2>Tekil ürün ekle / düzenle</h2><p>Manuel fiyat veya ürün kodu tanımlayın.</p></div></div></div>
@@ -1816,16 +1818,25 @@ function catalogPreviewStatus(message,type='note'){$('catalogStatus').textConten
 function catalogBlockingReview(row,list){
  const problems=[];
  if(!catalogText(row.name))problems.push('Ürün adı boş');
+ if(!/[a-zçğıöşü]{3,}/i.test(catalogText(row.name)))problems.push('Ürün adı yalnızca sayı/ölçü içeriyor; ürün ailesi belirli değil');
  if(row.manualProductType&&!catalogManualTypeValid(row))problems.push('Seçilen gerçek ürün türü ürün adıyla uyuşmuyor');
- if(!catalogSpecificType(row.name)&&!catalogPipeLengthDimension(row.name)&&!catalogManualTypeValid(row))problems.push('Gerçek ürün türü belirtilmemiş: ürün adının altından tür seçin');
+
  if(row.priceInputError)problems.push('Fiyat alanı geçersiz');
  if(row.price!==null&&(!Number.isFinite(row.price)||row.price<0))problems.push('Geçersiz fiyat');
- if(row.origin==='PDF'&&row.price!==null&&!catalogText(row.code))problems.push('Fiyatlı PDF ürünü için stok kodu gerekli');
+ if(!row.section&&!pendingCatalog?.list)problems.push('Ürün başlığı bulunamadı');
+
  if(row.importConflict)problems.push('Aynı stok kodu birden fazla farklı üründe kullanılıyor');
- const initial=(row.initialIssues||[]).join(' | ');
- if(/sonundaki sayı|koli adedi \/ boy uzunluğu/i.test(initial)&&!(row.nameEdited&&(row.packageEdited||catalogText(row.packageQty))))problems.push('Şüpheli koli sayısı: ürün adını ve koli alanını düzeltin');
- if(/fiyat sütunu net okunamadı|fiyat ayrı sütunda doğrulanamadı|fiyat sütunu belirsiz/i.test(initial)&&!row.priceEdited)problems.push('Belirsiz fiyatı kaynak satırla karşılaştırıp fiyat alanını düzenleyin');
- if(/tablo sütun başlıkları bulunamadı/i.test(initial)&&!row.nameEdited)problems.push('Başlığı okunamayan satırın ürün adını kaynaktan doğrulayın');
+ if(row.code){
+  const sameCode=db.products.filter(p=>p.list===list&&norm(p.code)===norm(row.code));
+  for(const prior of sameCode){
+   const oldType=quoteProductTypes(prior.name),newType=quoteProductTypes(row.name);
+   if(oldType.length&&newType.length&&oldType.join('|')!==newType.join('|'))
+    problems.push('Mevcut stok koduyla farklı ürün türü çakışıyor');
+  }
+ }
+
+
+
  const productMat=catalogMaterial(row.name),sectionMat=catalogMaterial(row.section||'');
  if(productMat&&sectionMat&&productMat!==sectionMat)problems.push('PDF başlığı ile ürünün PP/PVC malzemesi çakışıyor');
  const prior=db.products.find(p=>p.list===list&&(row.code?p.code===row.code:norm(p.name)===norm(row.name)));
@@ -1870,7 +1881,7 @@ function catalogRowHtml(row,index,isRisk){
  const selectedCategory=$('importGroup').value;const options=`<option value="${esc(groupIdForCategory(selectedCategory))}">${esc(selectedCategory)}</option>`;
  const group=`<span class="pill" title="Katalog yüklerken seçilen ortak ürün grubu">${esc(selectedCategory)}</span>`;
  const reviewed=!!row.reviewApproved;
- const review=`<label class="catalog-review-check"><input type="checkbox" aria-label="Kontrol ettim ${index+1}" onchange="approveCatalogRiskRow(${index},this.checked)" ${reviewed?'checked':''} ${disabled||row.excluded?'disabled':''}> Kontrol ettim, aktarıma dahil et</label><button class="catalog-exclude" type="button" onclick="excludeCatalogRiskRow(${index})" ${disabled?'disabled':''}>${row.excluded?'Tekrar dahil et':'Hariç tut'}</button><div class="catalog-review-feedback" data-state="${row.reviewMessageState||''}" aria-live="polite">${esc(row.reviewMessage||'')}</div>`;
+ const review=`<label class="catalog-review-check"><input type="checkbox" aria-label="Kontrol ettim ${index+1}" onchange="approveCatalogRiskRow(${index},this.checked)" ${reviewed?'checked':''} ${disabled||row.excluded?'disabled':''}> Mevcut bilgilerle onayla</label><button class="catalog-exclude" type="button" onclick="excludeCatalogRiskRow(${index})" ${disabled?'disabled':''}>${row.excluded?'Tekrar dahil et':'Hariç tut'}</button><div class="catalog-review-feedback" data-state="${row.reviewMessageState||''}" aria-live="polite">${esc(row.reviewMessage||'')}</div>`;
  return `<tr data-catalog-row="${index}" class="${disabled?'catalog-imported':''}">${basic}<td class="catalog-size-cell">${esc(row.size||catalogReadableSize(row.name)||'—')}</td><td>${group}</td><td>${price}</td><td>${packageCell}</td><td><span class="catalog-current-status">${title}</span><div class="catalog-risk-reason catalog-risk-reasons">${reasonHtml}</div><details><summary>PDF / Excel kaynak satır</summary><div class="catalog-risk-source">${esc(row.raw||'Kaynak metin yok')}</div></details></td><td>${review}</td></tr>`;
 }
 // Önizlemedeki satırı yerinde güncelle. Tüm tabloyu yeniden çizmek, input'tan
@@ -1937,7 +1948,7 @@ function renderCatalogPreview(){
 }
 function editCatalogPreview(index,key,value,inputEl){
  const row=pendingCatalog?.rows?.[index];if(!row||row.imported)return;
- row.reviewApproved=false;row.reviewMessage='';row.reviewMessageState='';
+ row.reviewApproved=false;row.approvalMode='';row.approvalWarnings=[];row.reviewMessage='';row.reviewMessageState='';
  if(key==='price'){row.priceEdited=true;
   const t=catalogText(value),price=numberOrNull(t);
   row.priceInputError=!!t&&(price===null||!Number.isFinite(price)||price<0);
@@ -1968,9 +1979,54 @@ function editCatalogPreview(index,key,value,inputEl){
  if(inputEl&&key==='name'&&document.activeElement===inputEl)inputEl.value=row.name;
  catalogRefreshOneRow(index);catalogRefreshCounts();
 }
+
+/* v4.5 — Users may verify a captured PDF row without retyping every field.
+   Structural contradictions are still blocking; source uncertainty is a warning.
+   This mode does not invent product types, SKUs or prices. */
+function catalogApprovalWarnings(row,list){
+ const warnings=[...catalogRowSafety(row,list)];
+ if(!catalogSpecificType(row.name)&&!catalogPipeLengthDimension(row.name)&&!catalogManualTypeValid(row))
+  warnings.push('Gerçek ürün türü belirlenemedi; katalogda mevcut adla saklanacak, otomatik eşleşme yapılamayabilir');
+ if(!catalogText(row.code))warnings.push('Stok kodu eksik; tekliften önce tamamlanmalı');
+ if(row.price===null)warnings.push('Fiyat okunamadı; ürün fiyat girilmedi olarak saklanacak');
+ if(row.origin==='PDF'&&row.price!==null&&!row.priceVerified)
+  warnings.push('PDF fiyatını kaynak belgeyle karşılaştırarak onaylayın');
+ if(!row.section)warnings.push('Üst başlık kaynakta okunamadı; liste adı kullanılacak');
+ return [...new Set(warnings)];
+}
+function approveCatalogAsCaptured(){
+ if(!pendingCatalog?.rows?.length)return;
+ refreshCatalogConflicts();
+ const list=pendingCatalog.list;
+ const eligible=pendingCatalog.rows.map((row,index)=>({row,index})).filter(({row})=>
+  !row.imported&&!row.excluded&&row.name&&catalogNeedsReview(row,list)&&catalogBlockingReview(row,list).length===0);
+ const blockers=pendingCatalog.rows.filter(row=>!row.imported&&!row.excluded&&row.name&&catalogBlockingReview(row,list).length>0).length;
+ if(!eligible.length){
+  catalogPreviewStatus(blockers?'Toplu onaylanabilecek satır yok. '+blockers+' satır gerçek veri çelişkisi nedeniyle engelli.':'Onay bekleyen uygun satır yok.','warn');return;
+ }
+ const priceRows=eligible.filter(({row})=>row.price!==null).length;
+ const withoutCode=eligible.filter(({row})=>!row.code).length;
+ const withoutType=eligible.filter(({row})=>!catalogSpecificType(row.name)&&!catalogPipeLengthDimension(row.name)).length;
+ if(!confirm(eligible.length+' riskli satırı PDF / Excel’den okunan mevcut bilgileriyle ONAYLAMAK üzeresiniz.\\n\\n'+
+  'Fiyatı olan: '+priceRows+' · Kodu eksik: '+withoutCode+' · Türü belirsiz: '+withoutType+
+  '\\n\\nFiyatı olan satırların tutarlarını kaynak belgeden kontrol ettiğinizi kabul ediyorsunuz.\\n'+
+  'Boş alanlar uydurulmayacak, boş fiyat 0 TL sayılmayacak.\\n'+
+  (blockers?blockers+' çelişkili satır onaylanmayacak.\\n':'')+'\\nDevam edilsin mi?'))return;
+ for(const {row} of eligible){
+  row.reviewApproved=true;row.priceVerified=row.price===null?false:true;
+  row.approvalMode='existing-data';row.approvalWarnings=catalogApprovalWarnings(row,list);
+  row.reviewMessage='Mevcut bilgilerle onaylandı. Belirsiz alanlar kaydedilirken uyarı olarak tutulacak.';
+  row.reviewMessageState='ok';
+ }
+ renderCatalogPreview();
+ catalogPreviewStatus(eligible.length+' satır mevcut bilgileriyle onaylandı. '+
+  (blockers?blockers+' çelişkili satır hariç. ':'')+
+  'Kaydetmeden önce Katalog Doğrulama Merkezi onayını da işaretleyin.','ok');
+}
+
 function approveCatalogRiskRow(index,approved){
  const row=pendingCatalog?.rows?.[index];if(!row||row.imported||row.excluded)return;
- if(!approved){row.reviewApproved=false;row.priceVerified=false;row.reviewMessage='Onay geri alındı.';row.reviewMessageState='';catalogRefreshOneRow(index);catalogRefreshCounts();return;}
+ if(!approved){row.reviewApproved=false;row.priceVerified=false;row.approvalMode='';row.approvalWarnings=[];row.reviewMessage='Onay geri alındı.';row.reviewMessageState='';catalogRefreshOneRow(index);catalogRefreshCounts();return;}
  refreshCatalogConflicts();
  const blocked=catalogBlockingReview(row,pendingCatalog.list);
  if(blocked.length){
@@ -1979,8 +2035,9 @@ function approveCatalogRiskRow(index,approved){
   catalogPreviewStatus(`Satır ${index+1} kontrol istiyor. Açıklama ilgili satırın yanında gösterildi.`,'warn');return;
  }
  // Kaynaktan doğrulama onayı; diğer ürünleri ve tablonun kaydırma konumunu değiştirme.
- row.reviewApproved=true;row.priceVerified=true;
- row.reviewMessage='Onaylandı. Üstteki “Hazır ve onaylı ürünleri kataloğa aktar” butonuyla kaydedebilirsiniz.';
+ row.reviewApproved=true;row.priceVerified=row.price!==null;
+ row.approvalMode='existing-data';row.approvalWarnings=catalogApprovalWarnings(row,pendingCatalog.list);
+ row.reviewMessage='Eldeki bilgilerle onaylandı. Eksik alanlar uydurulmadı; aktarım düğmesiyle kaydedebilirsiniz.';
  row.reviewMessageState='ok';
  catalogRefreshOneRow(index);catalogRefreshCounts();
  catalogPreviewStatus(`Satır ${index+1} onaylandı. Ürün henüz kaydedilmedi; aktarım düğmesini kullanın.`,'ok');
@@ -1991,7 +2048,7 @@ function approveCatalogRiskRow(index,approved){
 async function catalogExcludeOrDelete(index){
  const row=pendingCatalog?.rows?.[index];if(!row)return;
  if(!row.imported){
-  row.excluded=!row.excluded;row.reviewApproved=false;
+  row.excluded=!row.excluded;row.reviewApproved=false;row.approvalMode='';
   row.reviewMessage=row.excluded?'Aktarımdan çıkarıldı.':'Satır yeniden dahil edildi.';
   row.reviewMessageState='';
   renderCatalogPreview();return;
@@ -2011,7 +2068,7 @@ async function catalogExcludeOrDelete(index){
 
 function excludeCatalogRiskRow(index){
  const row=pendingCatalog?.rows?.[index];if(!row||row.imported)return;
- row.excluded=!row.excluded;row.reviewApproved=false;
+ row.excluded=!row.excluded;row.reviewApproved=false;row.approvalMode='';
  row.reviewMessage=row.excluded?'Satır aktarım dışında tutuldu.':'Satır yeniden dahil edildi, kayıttan önce onaylayın.';row.reviewMessageState='';
  catalogRefreshOneRow(index);catalogRefreshCounts();
 }
@@ -2068,7 +2125,7 @@ async function confirmCatalogImport(){
  const allowMissing=$('allowMissingPrice').checked,allowUpdate=$('allowExistingUpdates').checked;
  const good=pendingCatalog.rows.filter(r=>catalogReady(r,list)&&(allowMissing||r.price!==null));
  const unfinished=pendingCatalog.rows.filter(r=>!r.imported&&!r.excluded&&!catalogReady(r,list)).length;
- if(!good.length)return alert('Aktarılacak hazır ürün yok. Riskli satırları düzenleyip kaynak belgeyle kontrol ederek onaylayın.');
+ if(!good.length)return alert('Aktarılacak hazır ürün yok. İsterseniz “Uygun riskli satırların tümünü mevcut bilgilerle onayla” seçeneğini kullanın.');
  let newCount=0,changed=0,skipped=0;
  const temp=db.products.map(p=>({...p}));
  const beforeMeta=structuredClone(db.meta||{});
@@ -2079,7 +2136,7 @@ async function confirmCatalogImport(){
   const name=catalogText(r.name);
   const prior=temp.find(p=>p.list===list&&(code?p.code===code:norm(p.name)===norm(name)));
   if(prior&&!allowUpdate){skipped++;continue;}
-  const data={id:prior?.id||uid(),name,code,section,price:r.price===null?(prior?.price??null):r.price,list,category,groupId:groupIdForCategory(category),unit:r.unit||'adet',size:r.size||catalogReadableSize(name),packageQty:r.packageQty||'',lengthPerPiece:r.lengthPerPiece||'',sourceOrder:prior?.sourceOrder??r.sourceOrder??pendingCatalog.rows.indexOf(r),sourcePage:r.page??prior?.sourcePage??''};
+  const data={id:prior?.id||uid(),name,code,section,price:r.price===null?(prior?.price??null):r.price,list,category,groupId:groupIdForCategory(category),unit:r.unit||'adet',size:r.size||catalogReadableSize(name),packageQty:r.packageQty||'',lengthPerPiece:r.lengthPerPiece||'',sourceOrder:prior?.sourceOrder??r.sourceOrder??pendingCatalog.rows.indexOf(r),sourcePage:r.page??prior?.sourcePage??'',sourceApprovalMode:r.approvalMode||prior?.sourceApprovalMode||'parsed',sourceWarnings:r.approvalMode==='existing-data'?(r.approvalWarnings||catalogApprovalWarnings(r,list)).slice(0,10):(prior?.sourceWarnings||[])};
   if(prior){Object.assign(prior,data);changed++;}else{temp.push(data);newCount++;}
   actuallySaved.push({row:r,productId:data.id});
  }
